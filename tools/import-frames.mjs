@@ -1,0 +1,10 @@
+import fs from 'node:fs/promises';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {createHash} from 'node:crypto';
+const run=promisify(execFile),root='native/assets/frames';await fs.mkdir(root,{recursive:true});
+const names=['frame-minion-neutral.png','base-minion-premium.png','frame-minion-premium-neutral.png','attack-minion.png','attack-minion-premium.png','health.png','health-premium.png','name-banner-minion.png','name-banner-minion-premium.png','race-banner.png','race-banner-premium.png'];
+const entries=[];await Promise.all(names.map(async name=>{const url='https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/'+name;try{await run('curl.exe',['-sSL','--fail','--retry','2','--max-time','40',url,'-o',root+'/'+name],{windowsHide:true});const bytes=await fs.readFile(root+'/'+name);entries.push({name,url,sha256:createHash('sha256').update(bytes).digest('hex')});}catch{console.log('Unavailable: '+name);}}));
+await fs.writeFile(root+'/manifest.json',JSON.stringify({source:'HearthSim/Sunwell',copyright:'Blizzard Entertainment',resources:entries},null,2));
+await run('curl.exe',['-sSL','--fail','--max-time','20','https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/LICENSE','-o',root+'/Sunwell-LICENSE.txt'],{windowsHide:true});
+console.log('Cached '+entries.length+' frame layers');

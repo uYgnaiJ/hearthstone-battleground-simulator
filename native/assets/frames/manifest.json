@@ -1,0 +1,61 @@
+{
+  "source": "HearthSim/Sunwell",
+  "copyright": "Blizzard Entertainment",
+  "resources": [
+    {
+      "name": "frame-minion-premium-neutral.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/frame-minion-premium-neutral.png",
+      "sha256": "e7a8ee15fd05374c0c24f11aa361f8aed250f1904b8ea1cce07cbfdf364c3d6d"
+    },
+    {
+      "name": "race-banner-premium.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/race-banner-premium.png",
+      "sha256": "e8337ec7955997a8e6e1ddb0657395915f43880030fb725f0f1c933cc0ba39bd"
+    },
+    {
+      "name": "attack-minion.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/attack-minion.png",
+      "sha256": "a278a3795fe3c2925ba33e78982ffcd4498a9bc65679057d762b87ff37e95795"
+    },
+    {
+      "name": "health-premium.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/health-premium.png",
+      "sha256": "dc193b0c95a5acbba056c33e00e3dd37f888a0e4c0f0a33f523f818d38b7983d"
+    },
+    {
+      "name": "name-banner-minion-premium.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/name-banner-minion-premium.png",
+      "sha256": "0e9c9abc3f8655daf767753ec6a81584db3a4e314065c4bb2f2bd5625b9645af"
+    },
+    {
+      "name": "health.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/health.png",
+      "sha256": "5949d3c68d40a34d9d1f8bff1291314663d549f2f465059302928a7ec5405bb8"
+    },
+    {
+      "name": "race-banner.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/race-banner.png",
+      "sha256": "5125b6f22de34f33f18546ff26e579a6699d92417b59424bf15173e346716293"
+    },
+    {
+      "name": "base-minion-premium.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/base-minion-premium.png",
+      "sha256": "368b107d50685def86ba4527607b63132bbcb80d40affde4f5e2ba2fe22df6f2"
+    },
+    {
+      "name": "attack-minion-premium.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/attack-minion-premium.png",
+      "sha256": "3d4a050e120d0e702a1673d27e33654c4e9b6b400aef858cc23d5a7ddd28bcf5"
+    },
+    {
+      "name": "name-banner-minion.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/name-banner-minion.png",
+      "sha256": "6248fb64d29e74d6bf87eeab868ec417435fa170a08ff543081bd84d2c313b84"
+    },
+    {
+      "name": "frame-minion-neutral.png",
+      "url": "https://cdn.jsdelivr.net/gh/HearthSim/Sunwell@master/assets/frame-minion-neutral.png",
+      "sha256": "a8eccf62fba5a12848b96ba0411033288676e9f28831902f966856614886f88e"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "build": 35747,
+  "patch": "15.6",
+  "title": "Origins",
+  "hash": "d19694a9cfbb76b0387182f56f17a986bb5816dd9df0a500242f73b530ba3974",
+  "source": "https://api.hearthstonejson.com/v1/35747/enUS/cards.json",
+  "cardCount": 80,
+  "heroCount": 23,
+  "notes": [
+    "Historical tiers are a reviewed local manifest, not supplied by this old JSON schema.",
+    "Akazamzarak secrets and exact historical random-summon pools remain outside the supported ruleset."
+  ]
+}

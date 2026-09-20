@@ -1,0 +1,130 @@
+{
+  "resources": [
+    {
+      "name": "Voidwalker",
+      "path": "art/render_token_CS2_065.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/48.png",
+      "sourceId": "CS2_065",
+      "sha256": "8bcd2b0827a3a3e5e9c7a98f7c63e2a201aaad0d8652897ba295efdaafe92fc7"
+    },
+    {
+      "name": "Murloc Scout",
+      "path": "art/render_token_EX1_506a.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/1078.png",
+      "sourceId": "EX1_506a",
+      "sha256": "c5c719f64a077d48eacab68dee51739e5735e9b4516b5be50b562b00c86d5f6b"
+    },
+    {
+      "name": "Jo-E Bot",
+      "path": "art/render_token_BOT_445t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/48885.png",
+      "sourceId": "BOT_445t",
+      "sha256": "3771e2771f40e20ca65903b49746a3a1933bdb723ef238426336aeb24ba63e24"
+    },
+    {
+      "name": "Tabbycat",
+      "path": "art/render_token_CFM_315t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/40425.png",
+      "sourceId": "CFM_315t",
+      "sha256": "5ba8b347a8c9daf1c5972f0b528f27e2345205bc1168321cf14c7379f91b1f53"
+    },
+    {
+      "name": "Finkle Einhorn",
+      "path": "art/render_token_EX1_finkle.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/1006.png",
+      "sourceId": "EX1_finkle",
+      "sha256": "4ef3b6bdc086b56192d360283541c37f40d64b7b6767ea129735e020ac4743e4"
+    },
+    {
+      "name": "Plant",
+      "path": "art/render_token_UNG_999t2t1.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/41067.png",
+      "sourceId": "UNG_999t2t1",
+      "sha256": "30cad01e6d5cda173fd6d9926abca2d0a2846d0b66c037b58edc5e330648f040"
+    },
+    {
+      "name": "Robosaur",
+      "path": "art/render_token_BOT_537t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/49168.png",
+      "sourceId": "BOT_537t",
+      "sha256": "7cb3976bfd546e2883f4c22f785ee474dda1e0654ef8992ea826f5f270a6ce8f"
+    },
+    {
+      "name": "Big Bad Wolf",
+      "path": "art/render_token_KAR_005a.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/39161.png",
+      "sourceId": "KAR_005a",
+      "sha256": "1ec3d725568592244c7d9f93bb68ca84fee9b823ca1199b01cc351ae0232429d"
+    },
+    {
+      "name": "Spider",
+      "path": "art/render_token_OG_216a.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/38735.png",
+      "sourceId": "OG_216a",
+      "sha256": "d5be2dfe6ded20e576d97ec8cd5d6d548a6f5a423753b2aaa3d136fdd096d96c"
+    },
+    {
+      "name": "Imp",
+      "path": "art/render_token_BRM_006t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/2779.png",
+      "sourceId": "BRM_006t",
+      "sha256": "2e8df62ae6fce0d333e0fc7216e0ef825f4163e717b5bc61536d8aebc8e34b21"
+    },
+    {
+      "name": "Amalgam",
+      "path": "art/render_token_DAL_087t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/53019.png",
+      "sourceId": "DAL_087t",
+      "sha256": "f857e791eca734b9cad1c1dea71302d2da24a5fa88fb6c498b7f26e92501bf1a"
+    },
+    {
+      "name": "Hyena",
+      "path": "art/render_token_EX1_534t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/1624.png",
+      "sourceId": "EX1_534t",
+      "sha256": "1e5ecab8b39159e6bf047e8c8ccc0b9473425621ae9e8e2015312ffe0ff87122"
+    },
+    {
+      "name": "Damaged Golem",
+      "path": "art/render_token_skele21.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/471.png",
+      "sourceId": "skele21",
+      "sha256": "d368141ee69c59367e2fbfb883aee9559266980ad079437a0c6c7ba00d4ff02c"
+    },
+    {
+      "name": "Microbot",
+      "path": "art/render_token_BOT_312t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/48842.png",
+      "sourceId": "BOT_312t",
+      "sha256": "108fb412fd3ba1d052a9dde8eff4e55c2ce22949950177e0a2ab9fa0a682109f"
+    },
+    {
+      "name": "Ironhide Runt",
+      "path": "art/render_token_TRL_232t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/50359.png",
+      "sourceId": "TRL_232t",
+      "sha256": "382f3d93803978db81cb488cae06b8f987c41d5b718523ec10fa444e86ef6470"
+    },
+    {
+      "name": "Rat",
+      "path": "art/render_token_CFM_316t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/41839.png",
+      "sourceId": "CFM_316t",
+      "sha256": "6caa48546ce7784676f37ff2a155739760fe76d44320a271e7d0b80f2455ed25"
+    },
+    {
+      "name": "Guard Bot",
+      "path": "art/render_token_BOT_218t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/49278.png",
+      "sourceId": "BOT_218t",
+      "sha256": "b4b5aa9ef91b3ff3a64b847d5358c7f0d64c62dd8690a0e4a19cf914f50cb3ef"
+    },
+    {
+      "name": "Primalfin",
+      "path": "art/render_token_UNG_201t.png",
+      "url": "https://cdn.jsdelivr.net/gh/schmich/hearthstone-card-images@5.0.1/cards/en_US/41523.png",
+      "sourceId": "UNG_201t",
+      "sha256": "1d4cd248a1719eca92473c854eb83f18c7fc4dd3fd81415ec1d2a4a31bc9abc1"
+    }
+  ]
+}
