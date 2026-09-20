@@ -366,6 +366,10 @@ public:
 #else
     if (auto env = std::getenv("BOBS_DATA_DIR"))
       return utf8Path(env);
+#ifdef __APPLE__
+    if (auto env = std::getenv("HOME"))
+      return utf8Path(env) / "Library" / "Application Support" / "BobsBattlegrounds";
+#endif
     if (auto env = std::getenv("LOCALAPPDATA"))
       return utf8Path(env) / "BobsBattlegrounds";
 #endif

@@ -6,14 +6,14 @@
   "type": "module",
   "scripts": {
     "dev": "npm run build && npm start",
-    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build.ps1",
-    "start": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/run.ps1",
-    "test": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1",
-    "soak": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1 -SkipBuild -Soak",
+    "build": "node tools/native.mjs build",
+    "start": "node tools/native.mjs start",
+    "test": "node tools/native.mjs test",
+    "soak": "node tools/native.mjs soak",
     "import:cards": "node tools/import-cards.mjs",
     "package": "npm run build",
-    "test:native": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1 -Smoke",
-    "setup:native": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/setup.ps1"
+    "test:native": "node tools/native.mjs smoke",
+    "setup:native": "node tools/native.mjs setup"
   },
   "devDependencies": {
     "hearthstone-card-images": "^5.0.2"

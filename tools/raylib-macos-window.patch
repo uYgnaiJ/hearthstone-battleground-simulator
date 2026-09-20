@@ -1,0 +1,13 @@
+--- a/src/platforms/rcore_desktop_glfw.c
++++ b/src/platforms/rcore_desktop_glfw.c
+@@ -1777,8 +1777,8 @@
+ 
+         // Center window into current monitor
+     #if defined(__APPLE__)
+-        CORE.Window.position.x = monitorX + (monitorWidth - CORE.Window.screen.width)/2;
+-        CORE.Window.position.y = monitorY + (monitorHeight - CORE.Window.screen.height)/2;
++        CORE.Window.position.x = monitorX + (monitorWidth - (int)CORE.Window.screen.width)/2;
++        CORE.Window.position.y = monitorY + (monitorHeight - (int)CORE.Window.screen.height)/2;
+     #else
+         CORE.Window.position.x = monitorX + (monitorWidth - CORE.Window.render.width)/2;
+         CORE.Window.position.y = monitorY + (monitorHeight - CORE.Window.render.height)/2;

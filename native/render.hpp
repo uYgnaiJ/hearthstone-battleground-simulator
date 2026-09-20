@@ -11,7 +11,7 @@
 namespace ui {
 inline constexpr int W=1600,H=900;
 inline Color Ink{48,26,18,255},Cream{250,224,161,255},Gold{221,169,66,255},Pale{255,241,194,255},Wood{66,35,21,255};
-inline Font title{},body{};inline Shader ovalShader{},panelShader{};inline int uvLocation=-1,panelUv=-1;inline Vector2 mouse{};inline bool clicked=false,released=false,down=false,blocked=false;inline std::string focus;
+inline Font title{},body{};inline Shader ovalShader{},panelShader{},boardShader{};inline int uvLocation=-1,panelUv=-1;inline Vector2 mouse{};inline bool clicked=false,released=false,down=false,blocked=false;inline std::string focus;
 inline std::map<std::string,Texture2D> textures;
 inline std::string root;
 inline float time=0;
@@ -19,12 +19,20 @@ inline float delta=1.f/60;inline bool wantsPointer=false;
 inline std::map<std::string,float> buttonGlow;
 struct EditState{size_t cursor=0,anchor=0;float scroll=0;};
 inline std::map<std::string,EditState> edits;
-inline void initialize(const std::string& path){root=path;title=LoadFontEx("C:/Windows/Fonts/georgiab.ttf",64,nullptr,250);body=LoadFontEx("C:/Windows/Fonts/segoeui.ttf",40,nullptr,250);if(!title.texture.id)title=GetFontDefault();if(!body.texture.id)body=GetFontDefault();
+inline void initialize(const std::string& path){root=path;
+#ifdef __APPLE__
+title=LoadFontEx("/System/Library/Fonts/Supplemental/Georgia Bold.ttf",64,nullptr,250);body=LoadFontEx("/System/Library/Fonts/Supplemental/Arial.ttf",40,nullptr,250);
+#else
+title=LoadFontEx("C:/Windows/Fonts/georgiab.ttf",64,nullptr,250);body=LoadFontEx("C:/Windows/Fonts/segoeui.ttf",40,nullptr,250);
+#endif
+if(!title.texture.id)title=GetFontDefault();if(!body.texture.id)body=GetFontDefault();
  SetTextureFilter(title.texture,TEXTURE_FILTER_BILINEAR);SetTextureFilter(body.texture,TEXTURE_FILTER_BILINEAR);
  const char* fragment="#version 330\nin vec2 fragTexCoord;in vec4 fragColor;out vec4 finalColor;uniform sampler2D texture0;uniform vec4 colDiffuse;uniform vec4 uvBounds;void main(){vec2 q=(fragTexCoord-uvBounds.xy)/uvBounds.zw*2.0-1.0;float d=dot(q,q);if(d>1.0)discard;finalColor=texture(texture0,fragTexCoord)*fragColor*colDiffuse;finalColor.a*=1.0-smoothstep(0.95,1.0,d);}";
  ovalShader=LoadShaderFromMemory(nullptr,fragment);uvLocation=GetShaderLocation(ovalShader,"uvBounds");
  const char* panelFragment="#version 330\nin vec2 fragTexCoord;in vec4 fragColor;out vec4 finalColor;uniform sampler2D texture0;uniform vec4 colDiffuse;uniform vec4 uvBounds;void main(){vec2 q=(fragTexCoord-uvBounds.xy)/uvBounds.zw;float edge=min(min(q.x,1.0-q.x),min(q.y,1.0-q.y));finalColor=texture(texture0,fragTexCoord)*fragColor*colDiffuse;finalColor.a*=smoothstep(0.0,0.20,edge);}";
  panelShader=LoadShaderFromMemory(nullptr,panelFragment);panelUv=GetShaderLocation(panelShader,"uvBounds");
+ const char* boardFragment="#version 330\nin vec2 fragTexCoord;in vec4 fragColor;out vec4 finalColor;uniform sampler2D texture0;uniform vec4 colDiffuse;void main(){vec4 c=texture(texture0,fragTexCoord)*fragColor*colDiffuse;float l=dot(c.rgb,vec3(0.299,0.587,0.114));c.rgb=mix(c.rgb,vec3(l),0.28)*vec3(0.94,0.97,1.08);finalColor=c;}";
+ boardShader=LoadShaderFromMemory(nullptr,boardFragment);
 }
 inline Texture2D texture(const std::string& name){if(name.empty())return {};auto it=textures.find(name);if(it!=textures.end())return it->second;auto full=root+"/"+name;Texture2D t{};if(FileExists(full.c_str())){t=LoadTexture(full.c_str());if(t.id){GenTextureMipmaps(&t);SetTextureFilter(t,TEXTURE_FILTER_TRILINEAR);}}textures[name]=t;return t;}
 inline void auraGlow(Vector2 center,float width,float height,float phase,float opacity){
@@ -51,8 +59,11 @@ inline bool button(const std::string& label,Rectangle r,bool enabled=true,bool b
 }
 inline void gem(float x,float y,float radius,Color color,const std::string& value,float fontSize=23,int sides=6){DrawPoly({x+2,y+4},sides,radius+3,-90,{36,20,17,255});DrawPoly({x,y},sides,radius+2,-90,Gold);DrawPoly({x,y},sides,radius-1,-90,color);DrawPolyLinesEx({x,y},sides,radius-3,-90,2,Fade(Pale,.4f));text(value,x,y-fontSize*.56f,fontSize,WHITE,true,true);}
 inline void star(float x,float y,float radius,Color c){Vector2 p[10];for(int i=0;i<10;i++){float a=-PI/2+i*PI/5;float rr=i%2?radius*.45f:radius;p[i]={x+cosf(a)*rr,y+sinf(a)*rr};}for(int i=0;i<10;i++)DrawTriangle({x,y},p[(i+1)%10],p[i],c);}
-inline void portrait(const std::string& art,Rectangle r,Color tint=WHITE){auto t=texture(art);if(!t.id){DrawEllipse((int)(r.x+r.width/2),(int)(r.y+r.height/2),r.width/2,r.height/2,{51,60,76,255});star(r.x+r.width/2,r.y+r.height/2,r.width*.22f,{142,167,193,255});return;}
- Rectangle source={0,0,(float)t.width,(float)t.height};if(art.find("render_")!=std::string::npos){source={t.width*.255f,t.height*.072f,t.width*.50f,t.height*.395f};}else{float aspect=r.width/r.height,ts=(float)t.width/t.height;if(ts>aspect){source.width=t.height*aspect;source.x=(t.width-source.width)*.5f;}else{source.height=t.width/aspect;source.y=(t.height-source.height)*.5f;}}
+inline void portrait(const std::string& art,Rectangle r,Color tint=WHITE){
+ std::string resolved=art;
+ if(art.starts_with("art/")){std::string id=art.substr(4);if(id.starts_with("render_"))id.erase(0,7);auto full="art/full_"+id;if(texture(full).id)resolved=full;}
+ auto t=texture(resolved);if(!t.id){DrawEllipse((int)(r.x+r.width/2),(int)(r.y+r.height/2),r.width/2,r.height/2,{51,60,76,255});star(r.x+r.width/2,r.y+r.height/2,r.width*.22f,{142,167,193,255});return;}
+ Rectangle source={0,0,(float)t.width,(float)t.height};if(resolved.find("render_")!=std::string::npos){source={t.width*.255f,t.height*.072f,t.width*.50f,t.height*.395f};}else{float aspect=r.width/r.height,ts=(float)t.width/t.height;if(ts>aspect){source.width=t.height*aspect;source.x=(t.width-source.width)*.5f;}else{source.height=t.width/aspect;source.y=(t.height-source.height)*.5f;}}
  float uv[4]={source.x/t.width,source.y/t.height,source.width/t.width,source.height/t.height};BeginShaderMode(ovalShader);SetShaderValue(ovalShader,uvLocation,uv,SHADER_UNIFORM_VEC4);DrawTexturePro(t,source,r,{0,0},0,tint);EndShaderMode();
 }
 inline void layer(const std::string& file,Rectangle r,Color tint=WHITE){auto t=texture("assets/frames/"+file);if(t.id)DrawTexturePro(t,{0,0,(float)t.width,(float)t.height},r,{0,0},0,tint);}
@@ -81,5 +92,5 @@ inline bool input(const std::string& id,std::string& value,Rectangle r,bool nume
  if(focus==id&&edit.cursor!=edit.anchor)DrawRectangleRec({left+width(std::min(edit.cursor,edit.anchor)),r.y+7,std::abs(width(edit.cursor)-width(edit.anchor)),25},{58,104,124,190});
  text(value,left,r.y+8,20,Cream);if(focus==id&&((int)(time*2)%2==0))DrawLineEx({left+caret,r.y+8},{left+caret,r.y+31},2,Gold);EndScissorMode();return changed;
 }
-inline void cleanup(){for(auto&[name,t]:textures)if(t.id)UnloadTexture(t);UnloadShader(ovalShader);UnloadShader(panelShader);if(title.texture.id!=GetFontDefault().texture.id)UnloadFont(title);if(body.texture.id!=GetFontDefault().texture.id)UnloadFont(body);}
+inline void cleanup(){for(auto&[name,t]:textures)if(t.id)UnloadTexture(t);UnloadShader(ovalShader);UnloadShader(panelShader);UnloadShader(boardShader);if(title.texture.id!=GetFontDefault().texture.id)UnloadFont(title);if(body.texture.id!=GetFontDefault().texture.id)UnloadFont(body);}
 }

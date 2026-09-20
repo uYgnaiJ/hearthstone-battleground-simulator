@@ -1,0 +1,768 @@
+{
+  "copyright": "Blizzard Entertainment",
+  "resources": [
+    {
+      "path": "art/bob.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/DALA_BOSS_99h.png",
+      "sourceId": "DALA_BOSS_99h",
+      "sha256": "260b085f1d3d61dd2315b096bdad068b001982e2577b68b065982ab377d5e06a"
+    },
+    {
+      "path": "art/full_AT_121.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/AT_121.png",
+      "sourceId": "AT_121",
+      "sha256": "adb0b0484e58a0828f7c9f74f68fadd5dafad4377e2b53a14fd13d4b77d27113"
+    },
+    {
+      "path": "art/full_BGS_001.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_001.png",
+      "sourceId": "BGS_001",
+      "sha256": "39673935577ad6188a389e99ab73ac7587c4f7e0afc094ad26a268705ffa06f5"
+    },
+    {
+      "path": "art/full_BGS_002.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_002.png",
+      "sourceId": "BGS_002",
+      "sha256": "d48250f836cbb94f03b8c7f5a6d0ee7604cab87cdc4d2f3eb1d1a13ee14b7a52"
+    },
+    {
+      "path": "art/full_BGS_004.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_004.png",
+      "sourceId": "BGS_004",
+      "sha256": "be2d398ebac5670e387d4e6eebd760c971d05d160c6d3d8a30f6c5124faed97d"
+    },
+    {
+      "path": "art/full_BGS_006.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_006.png",
+      "sourceId": "BGS_006",
+      "sha256": "587f916b227116168fdda820d8f18407fe332626c5e6054f4f374982c527619f"
+    },
+    {
+      "path": "art/full_BGS_008.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_008.png",
+      "sourceId": "BGS_008",
+      "sha256": "c493b817e29c144fd9cf94b73144797cc571e58626b5286bc8959d9b54f03aa2"
+    },
+    {
+      "path": "art/full_BGS_009.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_009.png",
+      "sourceId": "BGS_009",
+      "sha256": "f92e3397781d69056f9ad01ca76a46029067138503c7be28c578c6ab973c47e6"
+    },
+    {
+      "path": "art/full_BGS_010.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_010.png",
+      "sourceId": "BGS_010",
+      "sha256": "cad0a7d753a91d22b239aee21c4c6a6ed66f6f02fb54e1652ae389e8aba66e42"
+    },
+    {
+      "path": "art/full_BGS_012.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_012.png",
+      "sourceId": "BGS_012",
+      "sha256": "8492bb061a16fbda08ece62ca28f38fe88aa50e0c33a1ffb3a00feb3cd2b78fc"
+    },
+    {
+      "path": "art/full_BGS_017.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_017.png",
+      "sourceId": "BGS_017",
+      "sha256": "33095ed762f2ff91d8c36218f70dfb2b27fcdba67ad3b235c2f905416bd3048b"
+    },
+    {
+      "path": "art/full_BGS_018.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_018.png",
+      "sourceId": "BGS_018",
+      "sha256": "e8b81a1b53eb5aeea713084d6d16429cef185a0d37325077dbce3dad8c92dd5a"
+    },
+    {
+      "path": "art/full_BGS_020.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_020.png",
+      "sourceId": "BGS_020",
+      "sha256": "b35cd46d27ede228ead6bc98bb6b5de7749168bc84edac296d9226f02d1ef8ce"
+    },
+    {
+      "path": "art/full_BGS_021.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_021.png",
+      "sourceId": "BGS_021",
+      "sha256": "393d5e7360769e8d0234aa59d3d8a8a8d97483306fd5804c70fd422347b2f65f"
+    },
+    {
+      "path": "art/full_BGS_022.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_022.png",
+      "sourceId": "BGS_022",
+      "sha256": "492a0bce4a25ee83f18918acbe80f4d906e9e1bce92a91273477c07d73580e29"
+    },
+    {
+      "path": "art/full_BGS_023.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_023.png",
+      "sourceId": "BGS_023",
+      "sha256": "850c9cb5956649c55bf869caaeee464d60a9a38ca7f8a780f18472903de9bc43"
+    },
+    {
+      "path": "art/full_BGS_024.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_024.png",
+      "sourceId": "BGS_024",
+      "sha256": "3443fe53a804c14a4744ffcbceeed64c491807c3dd6bd2c568580afee0492d4c"
+    },
+    {
+      "path": "art/full_BGS_025.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_025.png",
+      "sourceId": "BGS_025",
+      "sha256": "d3748195a0295e70eaf2dc9a2780b583f4769e26ca9a15a38f539c0980906826"
+    },
+    {
+      "path": "art/full_BGS_027.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_027.png",
+      "sourceId": "BGS_027",
+      "sha256": "9aaeaac54666769ac383d383487352ac2d834c4dc12422a754e232a9717a23d0"
+    },
+    {
+      "path": "art/full_BGS_028.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_028.png",
+      "sourceId": "BGS_028",
+      "sha256": "f30a9cd9dbadfe8eeee699750fddd47fe5d8026f97387b6993849740e1fb80d2"
+    },
+    {
+      "path": "art/full_BGS_029.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_029.png",
+      "sourceId": "BGS_029",
+      "sha256": "c1f2ef45c31b07b30d4b24320843e6b755cac30de23501caef60695eab2efea8"
+    },
+    {
+      "path": "art/full_BGS_031.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BGS_031.png",
+      "sourceId": "BGS_031",
+      "sha256": "47bf226d0822e2ee891185f0d6fd852024ddc3c7fdff7e9e4e709e6e7cc06e1b"
+    },
+    {
+      "path": "art/full_BOT_218.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BOT_218.png",
+      "sourceId": "BOT_218",
+      "sha256": "7505ca265f2b6d155f784390887f0044fd320ac4d72b9a6b6f371a1b16f0c48c"
+    },
+    {
+      "path": "art/full_BOT_312.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BOT_312.png",
+      "sourceId": "BOT_312",
+      "sha256": "7c0b6594cf8a5701c9894d805dbd710d42aa368d814159a6668a1cb672ee783e"
+    },
+    {
+      "path": "art/full_BOT_445.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BOT_445.png",
+      "sourceId": "BOT_445",
+      "sha256": "893f32516741bb10048669bba8932138ff402fe341548dc8376205c2e0928ec3"
+    },
+    {
+      "path": "art/full_BOT_537.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BOT_537.png",
+      "sourceId": "BOT_537",
+      "sha256": "e5af38b3dcf07cc3d29f96f600c2607bb3756394fcacf7e1d6f09718ad3e2fa9"
+    },
+    {
+      "path": "art/full_BOT_606.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BOT_606.png",
+      "sourceId": "BOT_606",
+      "sha256": "2059bc45bbdd8ca5854c58bdb83a9126223b7152cb95d5f39c3f9494f248ffc4"
+    },
+    {
+      "path": "art/full_BOT_911.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BOT_911.png",
+      "sourceId": "BOT_911",
+      "sha256": "4d08c20d04eb0f8f9acf575285512b965576c9a103006f59b94a4a2a82b1fb07"
+    },
+    {
+      "path": "art/full_BRM_006.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/BRM_006.png",
+      "sourceId": "BRM_006",
+      "sha256": "06f68da5043593cbd4982c77a3130c1dba72f550d61f399d6ef8d996097497a4"
+    },
+    {
+      "path": "art/full_CFM_315.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/CFM_315.png",
+      "sourceId": "CFM_315",
+      "sha256": "33d3a206b5ec1488c715f07851afbb8d46e7ebdbb216eb6e89a5f35de5f3a752"
+    },
+    {
+      "path": "art/full_CFM_316.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/CFM_316.png",
+      "sourceId": "CFM_316",
+      "sha256": "1259210ba6b616c74fc3f24177894c5d1977a3e21d0b5c4b82e286826e640e35"
+    },
+    {
+      "path": "art/full_CFM_610.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/CFM_610.png",
+      "sourceId": "CFM_610",
+      "sha256": "a75038ba5d360e43a741deb0738fcbf495ef9c6d331414344ef7b7af3406d13c"
+    },
+    {
+      "path": "art/full_CFM_816.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/CFM_816.png",
+      "sourceId": "CFM_816",
+      "sha256": "382dfd663a205dab2d73693ae5f07ed0de93c7d2d916dc27d57f274b671ce6a4"
+    },
+    {
+      "path": "art/full_CS2_065.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/CS2_065.png",
+      "sourceId": "CS2_065",
+      "sha256": "94de9ace6e96b6279ac0301718f27af985f423c033bc3198f110358892d19068"
+    },
+    {
+      "path": "art/full_DAL_575.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/DAL_575.png",
+      "sourceId": "DAL_575",
+      "sha256": "35afaa14c867034adbb5af087d54dfb3df7aa7948f7999837333b9d2dc828de4"
+    },
+    {
+      "path": "art/full_DS1_070.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/DS1_070.png",
+      "sourceId": "DS1_070",
+      "sha256": "dc05e5d3e55198821953e53fa3c0e79027679e1421a55931eef76b93539e4f8c"
+    },
+    {
+      "path": "art/full_EX1_062.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_062.png",
+      "sourceId": "EX1_062",
+      "sha256": "b91aba1bb6d0d732a94ceef787dd5d10bdfb3288724bfc4c6d30e219b4d7b2f2"
+    },
+    {
+      "path": "art/full_EX1_093.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_093.png",
+      "sourceId": "EX1_093",
+      "sha256": "2e33f6f87e1528df8fb5abd6d9cf4ef36e593db2e58375362cddc7b42987dfad"
+    },
+    {
+      "path": "art/full_EX1_103.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_103.png",
+      "sourceId": "EX1_103",
+      "sha256": "685d95e5ceb1996befe7ad3f88cdbc741fcfa43ca646a37eec6a553200389e01"
+    },
+    {
+      "path": "art/full_EX1_162.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_162.png",
+      "sourceId": "EX1_162",
+      "sha256": "42cd82973cc0061defe2a52f022f0a83303070410b13cfa3d3fb8aa9a2dca1c4"
+    },
+    {
+      "path": "art/full_EX1_185.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_185.png",
+      "sourceId": "EX1_185",
+      "sha256": "b8df52b21128d82db067ca5aeb9bd0eccdeabaf4e2306049791c8c072c2c1429"
+    },
+    {
+      "path": "art/full_EX1_506.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_506.png",
+      "sourceId": "EX1_506",
+      "sha256": "35bf2a30d3b480dd443d98d8afc7c19e81d2bb02296b70f82d1cbf1fe40042b5"
+    },
+    {
+      "path": "art/full_EX1_507.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_507.png",
+      "sourceId": "EX1_507",
+      "sha256": "69e79e65cf16762ab9e2295e687f418ebac8bf4379f59028ce5b8a5f610edf1f"
+    },
+    {
+      "path": "art/full_EX1_509.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_509.png",
+      "sourceId": "EX1_509",
+      "sha256": "8e31978a79e2bca04c458c44634268ed4666ed4001c0e37cc4794b68f878bf2f"
+    },
+    {
+      "path": "art/full_EX1_531.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_531.png",
+      "sourceId": "EX1_531",
+      "sha256": "66f122b8356702f646a2b31f1d338bf445b19897fcce14cacba09f856e57945f"
+    },
+    {
+      "path": "art/full_EX1_534.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_534.png",
+      "sourceId": "EX1_534",
+      "sha256": "ef0c51a3dad8f75b171662f98b480918560df7d5219da1f45e00a3ef5469c8a0"
+    },
+    {
+      "path": "art/full_EX1_556.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_556.png",
+      "sourceId": "EX1_556",
+      "sha256": "db214855a55b43bc587639bb2747629711702eeeb1669f54739c129e31e35c8e"
+    },
+    {
+      "path": "art/full_EX1_577.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/EX1_577.png",
+      "sourceId": "EX1_577",
+      "sha256": "babeed47232feb68d8f70fca847e7dd7a985ec656c2b65e99469611e9ee8bb02"
+    },
+    {
+      "path": "art/full_FP1_010.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/FP1_010.png",
+      "sourceId": "FP1_010",
+      "sha256": "18e052a98fcaada21dff0cb65ecac52ab9f6eba4db9247727eede8210675deaf"
+    },
+    {
+      "path": "art/full_FP1_031.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/FP1_031.png",
+      "sourceId": "FP1_031",
+      "sha256": "d7e5f2a859e0d3ccf3ab90ff2109641b9313e86a0be18dc241fd6b15fbe53cf3"
+    },
+    {
+      "path": "art/full_GIL_655.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GIL_655.png",
+      "sourceId": "GIL_655",
+      "sha256": "74c2532ed1fd9a8297c4b8fa8a92dfaa3cb2baeed09f8401922da6e7886942a7"
+    },
+    {
+      "path": "art/full_GIL_681.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GIL_681.png",
+      "sourceId": "GIL_681",
+      "sha256": "619707fccf6c66462a9c73c44096029ba9d26ca91a03d209e38266af5959c33c"
+    },
+    {
+      "path": "art/full_GVG_021.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_021.png",
+      "sourceId": "GVG_021",
+      "sha256": "c4368ca0ea40bf37cef0125cef2077fe1167f9b914bb941c7e9d5d9cc194e366"
+    },
+    {
+      "path": "art/full_GVG_027.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_027.png",
+      "sourceId": "GVG_027",
+      "sha256": "74b3ecce27dcaf25d636e0c6492bedaff5b8150e375caa3cdc4903346633ed72"
+    },
+    {
+      "path": "art/full_GVG_048.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_048.png",
+      "sourceId": "GVG_048",
+      "sha256": "fd7495cc171b229c90f7bb50b1a0f98f9eb9852fb7c70f58013f30056220df21"
+    },
+    {
+      "path": "art/full_GVG_055.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_055.png",
+      "sourceId": "GVG_055",
+      "sha256": "dab0029b7fb90c9927516b1b4c118ff37ed353590fff0ffe6ffc15187f9d3049"
+    },
+    {
+      "path": "art/full_GVG_058.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_058.png",
+      "sourceId": "GVG_058",
+      "sha256": "9d4a740af621e25759c221bb0c9931f76f6cbc80c195eedc1568237b042fbe82"
+    },
+    {
+      "path": "art/full_GVG_062.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_062.png",
+      "sourceId": "GVG_062",
+      "sha256": "e28db049d3c1d262d9f5315add2b453c1d719dc674d9be311e7bfaf3947e977d"
+    },
+    {
+      "path": "art/full_GVG_085.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_085.png",
+      "sourceId": "GVG_085",
+      "sha256": "e1756b4bbd6c391d9463b0d13fa4badbea7d3658c768edd6eae62cfdb9aef723"
+    },
+    {
+      "path": "art/full_GVG_106.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_106.png",
+      "sourceId": "GVG_106",
+      "sha256": "0f66faaed2b5d3ff8b5d37b50a4b3816466daf85afaad5c1840e7342068305db"
+    },
+    {
+      "path": "art/full_GVG_113.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/GVG_113.png",
+      "sourceId": "GVG_113",
+      "sha256": "ebe54053b97fef398037a781c4123050ca363b84fcf63e44ae0b2d83233490e6"
+    },
+    {
+      "path": "art/full_ICC_038.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/ICC_038.png",
+      "sourceId": "ICC_038",
+      "sha256": "fa9aa0045b9d11f031750e2b2e216249840212e0899b69a709c149899e1b38d0"
+    },
+    {
+      "path": "art/full_ICC_807.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/ICC_807.png",
+      "sourceId": "ICC_807",
+      "sha256": "395d06d107a3590a55591f2fe793387c6a47a36ac4f653da30f7b462ea6f87f9"
+    },
+    {
+      "path": "art/full_ICC_858.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/ICC_858.png",
+      "sourceId": "ICC_858",
+      "sha256": "bdfc30d19e33980c411b39ea76eee81fd3193f77949fe6586d228c09185562c3"
+    },
+    {
+      "path": "art/full_KAR_005.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/KAR_005.png",
+      "sourceId": "KAR_005",
+      "sha256": "67705fc1d44b59dafd0b8af16eef8640594c7108a49727ab6b24b1c7b2269b37"
+    },
+    {
+      "path": "art/full_KAR_095.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/KAR_095.png",
+      "sourceId": "KAR_095",
+      "sha256": "d7b272abe53ee0ca67498d27424f272849941f1149db37e13aadaf476841af61"
+    },
+    {
+      "path": "art/full_KAR_702.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/KAR_702.png",
+      "sourceId": "KAR_702",
+      "sha256": "4ecd1e77e197d5367c13cd0edf591c634d27fb5b788fdf13f590eaa1a864a292"
+    },
+    {
+      "path": "art/full_LOE_077.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/LOE_077.png",
+      "sourceId": "LOE_077",
+      "sha256": "59335e1e6b020085afc17575d6bb2e974677dce5bcef083b2f5bf2313630c055"
+    },
+    {
+      "path": "art/full_LOOT_013.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/LOOT_013.png",
+      "sourceId": "LOOT_013",
+      "sha256": "4b67beadc9d7b9fa172147eaf5aec0e27fba126f5fea6a52a32267e65c7cd2d1"
+    },
+    {
+      "path": "art/full_LOOT_078.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/LOOT_078.png",
+      "sourceId": "LOOT_078",
+      "sha256": "4f5dc3bbd6ffab25fd72c7a74244f9ba9bef8516d19051bf98480c6a753dfbf2"
+    },
+    {
+      "path": "art/full_LOOT_368.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/LOOT_368.png",
+      "sourceId": "LOOT_368",
+      "sha256": "93e6dbd9e6db27a062d428f425fdb69467d2a1d99b858f12bdedfa0b7148a26a"
+    },
+    {
+      "path": "art/full_OG_145.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/OG_145.png",
+      "sourceId": "OG_145",
+      "sha256": "ce84c64c4a0a33b2c3b5c12f7ffe5a5b07655ce37382910ae800a5e1033b7370"
+    },
+    {
+      "path": "art/full_OG_216.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/OG_216.png",
+      "sourceId": "OG_216",
+      "sha256": "4372ccd36272710f4a1813ba19994d87d0c08786fb2111865801426db32c6fcb"
+    },
+    {
+      "path": "art/full_OG_221.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/OG_221.png",
+      "sourceId": "OG_221",
+      "sha256": "3b2787ffa8f1a755f379281976a195164ddb5457b4f2d2ae2a2d60dff6352a4c"
+    },
+    {
+      "path": "art/full_OG_256.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/OG_256.png",
+      "sourceId": "OG_256",
+      "sha256": "504c886742438e362d49d52d5cfa4e3e3d4967d1e3796f20fbc6b2f0ac8f9515"
+    },
+    {
+      "path": "art/full_OG_300.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/OG_300.png",
+      "sourceId": "OG_300",
+      "sha256": "f9591fc17d436e9be22f77f309853015e03b899404ef772f788cc9c32fc95f89"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_10.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_10.png",
+      "sourceId": "TB_BaconShop_HERO_10",
+      "sha256": "87fe3cffc1c27b51e225fefd00b3e15235380bcdb40647e74d6040b5d04eb2a7"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_11.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_11.png",
+      "sourceId": "TB_BaconShop_HERO_11",
+      "sha256": "6e05a510361e84375171953a51a90b2e26bc7f040ef1bbe39cf08af323e3be57"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_12.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_12.png",
+      "sourceId": "TB_BaconShop_HERO_12",
+      "sha256": "0ad43fc290db1cc4eedcf1c2ac8370d53bc5430bd280dcebaa67fdd4e722a2f7"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_14.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_14.png",
+      "sourceId": "TB_BaconShop_HERO_14",
+      "sha256": "3d42d2a65da2e5127a410b384a0e427609ad26e7912f54b4efd2906783ad49f8"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_15.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_15.png",
+      "sourceId": "TB_BaconShop_HERO_15",
+      "sha256": "05c84244e7fe178749a84c5c84020685bddbe7b5f0b1b697bed727cedf3584df"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_16.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_16.png",
+      "sourceId": "TB_BaconShop_HERO_16",
+      "sha256": "5b63f0a80dfb4301ae63c8a92891df3634906de0cf4833e596fedab0ed9ffa36"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_17.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_17.png",
+      "sourceId": "TB_BaconShop_HERO_17",
+      "sha256": "5e68a712b1ee3068405767a9971e8da3447f928dec7f87161fdf900280c460e5"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_18.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_18.png",
+      "sourceId": "TB_BaconShop_HERO_18",
+      "sha256": "a75bb86ebe3a8619f871c1b7fd6719158490322856cb959e77d09789343ee659"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_20.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_20.png",
+      "sourceId": "TB_BaconShop_HERO_20",
+      "sha256": "07b4920a4110d38a3e7f052bec19a1bd3d9699b52aef633a1d4217910b029251"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_22.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_22.png",
+      "sourceId": "TB_BaconShop_HERO_22",
+      "sha256": "96987bc0f24246ffb8fc4ec284ecb32e76ead305830e494ec51f861aaf6b6282"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_23.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_23.png",
+      "sourceId": "TB_BaconShop_HERO_23",
+      "sha256": "783acbdc765513b7d7220f05bd6192cdfd59bbc98cbd90ef87387864d994f511"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_25.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_25.png",
+      "sourceId": "TB_BaconShop_HERO_25",
+      "sha256": "08ba0588471b4b157fb3c100021bc3a0e9eae1a919981320c71e93ef4b73b4e7"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_27.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_27.png",
+      "sourceId": "TB_BaconShop_HERO_27",
+      "sha256": "69d2b07175b96d025392d9f3cde787562d2e5cd1eb8b66cc1d483d98f2d72475"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_28.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_28.png",
+      "sourceId": "TB_BaconShop_HERO_28",
+      "sha256": "89f48cbcdefa596089876be33a20be0d7a3b916b97cd69e04b2ec303840605e3"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_30.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_30.png",
+      "sourceId": "TB_BaconShop_HERO_30",
+      "sha256": "9e53e069703e5436627894142e91b23d19676eb778a4f7ca40501060eff23c9c"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_31.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_31.png",
+      "sourceId": "TB_BaconShop_HERO_31",
+      "sha256": "4781c650e3000a03c7637b0c3a94e45511337b96430a0daf49bd04f4bb68ade3"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_33.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_33.png",
+      "sourceId": "TB_BaconShop_HERO_33",
+      "sha256": "c0f0e9ef5548cfe4ca916399e594fcc2b320837632718259e7a80c915d5a68c6"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_34.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_34.png",
+      "sourceId": "TB_BaconShop_HERO_34",
+      "sha256": "98f4fad00368460f45d9990fb4adb87f3f1de629ae5fb13dd713c514e66dccb8"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_35.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_35.png",
+      "sourceId": "TB_BaconShop_HERO_35",
+      "sha256": "a22b9c9efd759ec2b76ef5b643409d1b8a48584abb8ad3c560e2b1707458c63f"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_36.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_36.png",
+      "sourceId": "TB_BaconShop_HERO_36",
+      "sha256": "d90c42d4d6d58a94f96e4479b5667e9f7189539423a34559eba4bfab88af8605"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_37.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_37.png",
+      "sourceId": "TB_BaconShop_HERO_37",
+      "sha256": "7da7e6471c786f5b7f4a433780c8e5a842ecb82aaf9c3964df2b87c64e69b3a3"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_38.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HERO_38.png",
+      "sourceId": "TB_BaconShop_HERO_38",
+      "sha256": "3fce6528624d830115aac46231313999d67a0e1ff7889c442575cd11553c4356"
+    },
+    {
+      "path": "art/full_TB_BaconShop_HERO_39.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/ULDA_BOSS_12h.png",
+      "sourceId": "ULDA_BOSS_12h",
+      "sha256": "b284388566da9deb23720bb99273aa05d968205c7f5e96b21524568e159389f6"
+    },
+    {
+      "path": "art/full_TRL_232.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TRL_232.png",
+      "sourceId": "TRL_232",
+      "sha256": "38abb7098e997d9b81be813a5cc4a9b91a4fa0b67c86015cd1cbb4e0bc6e60c0"
+    },
+    {
+      "path": "art/full_ULD_179.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/ULD_179.png",
+      "sourceId": "ULD_179",
+      "sha256": "c22fb77904c07fc16d88b58b9dee1a826320cc1a75af0135a104dcc7d59f30e4"
+    },
+    {
+      "path": "art/full_UNG_010.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/UNG_010.png",
+      "sourceId": "UNG_010",
+      "sha256": "ddcf2d94753dfd054fb37422bdf62d0d9ee927ba6465d8ebb27d5c2f2561665f"
+    },
+    {
+      "path": "art/full_UNG_037.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/UNG_037.png",
+      "sourceId": "UNG_037",
+      "sha256": "99e5f85943dc3db445c90b85d44048f723d9c982b209e2d40c7cc5e6e96684fe"
+    },
+    {
+      "path": "art/full_UNG_073.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/UNG_073.png",
+      "sourceId": "UNG_073",
+      "sha256": "a27b62f057bafc7364b27b42fbcf0389023f4a4619aefed3992bf8a5f38e8782"
+    },
+    {
+      "path": "art/power_afkay.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_044.png",
+      "sourceId": "TB_BaconShop_HP_044",
+      "sha256": "4575417a1513ecec25d3325ba902e835033b9a95532fb95aa0302552753c4e87"
+    },
+    {
+      "path": "art/power_bartendotron.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_009.png",
+      "sourceId": "TB_BaconShop_HP_009",
+      "sha256": "310af3a0746fb1e65d2087386ebdf5b930cdf6a2e020c80ea9d5565cd6bdb16e"
+    },
+    {
+      "path": "art/power_curator.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_033.png",
+      "sourceId": "TB_BaconShop_HP_033",
+      "sha256": "7415be6d1a9d7ed2fe22e5b275d5fe9380367ad9ae18193ac82071feea6bb79d"
+    },
+    {
+      "path": "art/power_deryl.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_042.png",
+      "sourceId": "TB_BaconShop_HP_042",
+      "sha256": "8b1a8a47e7c57554c664e419d07ced3d5d278e507d9a9698706834f407a5b678"
+    },
+    {
+      "path": "art/power_gallywix.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_008.png",
+      "sourceId": "TB_BaconShop_HP_008",
+      "sha256": "896c24ba13728e2338286710d7ef73590f4f644aff6b544640ea36fcf11f9a94"
+    },
+    {
+      "path": "art/power_george.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_010.png",
+      "sourceId": "TB_BaconShop_HP_010",
+      "sha256": "46a9184d7e7b768125b7e93b055f5edba288433ed76e204f66f692c81f9d9b52"
+    },
+    {
+      "path": "art/power_jaraxxus.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_036.png",
+      "sourceId": "TB_BaconShop_HP_036",
+      "sha256": "f5256544c7fc81999d3913a906795506a4f230b5287b4f873118c28f398aea2f"
+    },
+    {
+      "path": "art/power_lichbaz.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_049.png",
+      "sourceId": "TB_BaconShop_HP_049",
+      "sha256": "b72819689f567e79fbf5b7e9a596722bef7a78cd024c0e2176da713a9f7fe24c"
+    },
+    {
+      "path": "art/power_lichking.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_024.png",
+      "sourceId": "TB_BaconShop_HP_024",
+      "sha256": "832b2f44561c4e9a00882a58a09b8861d6910d649c246b4a43fa8691d7a9b9a5"
+    },
+    {
+      "path": "art/power_millificent.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_015.png",
+      "sourceId": "TB_BaconShop_HP_015",
+      "sha256": "5b93d8f9400a5f4427942e26f1c26e6b162237386c45f4df694acd15a8672978"
+    },
+    {
+      "path": "art/power_mukla.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_038.png",
+      "sourceId": "TB_BaconShop_HP_038",
+      "sha256": "8e8bd21fd1eee9811b7ded0bc45995acf6cd03e982b38275d882160c202a645a"
+    },
+    {
+      "path": "art/power_nefarian.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_043.png",
+      "sourceId": "TB_BaconShop_HP_043",
+      "sha256": "7342b368e83d247767a80b0a59501a3fe8e15933d0eb12511e04cec6edfb8104"
+    },
+    {
+      "path": "art/power_patches.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_027.png",
+      "sourceId": "TB_BaconShop_HP_027",
+      "sha256": "0822a318bcecf0374b241ff759eeeab59d01a9fe136f04f5cd18abda26113160"
+    },
+    {
+      "path": "art/power_patchwerk.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_035.png",
+      "sourceId": "TB_BaconShop_HP_035",
+      "sha256": "d03c6ca5e89748722582998a6ba1a2feabfb6b87d30c5a1cedb349555d695c6b"
+    },
+    {
+      "path": "art/power_putricide.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_018.png",
+      "sourceId": "TB_BaconShop_HP_018",
+      "sha256": "4753254a6f171a77d00c9492a2e12ab397a610be7d3067109cfe7a45d368605b"
+    },
+    {
+      "path": "art/power_pyramad.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_040.png",
+      "sourceId": "TB_BaconShop_HP_040",
+      "sha256": "a8b25109dc999f9219fcbdc77eb55cedf907c460dabf9e1281726a58b195cf02"
+    },
+    {
+      "path": "art/power_ragnaros.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_019.png",
+      "sourceId": "TB_BaconShop_HP_019",
+      "sha256": "87a03d77e8c5c49d1a6402b47ffaa3b752b129008273e08a33c7bfd884120a44"
+    },
+    {
+      "path": "art/power_ratking.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_041a.png",
+      "sourceId": "TB_BaconShop_HP_041a",
+      "sha256": "5b1eef2d5c93e0186d1af19987f4add8f0d3be0574745eadc298c9cb9e475ede"
+    },
+    {
+      "path": "art/power_shudderwock.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_022.png",
+      "sourceId": "TB_BaconShop_HP_022",
+      "sha256": "446112e3f09375aebb210ca43ba3b00a9cc4f663398dd2b19324ebe5ac45c3d7"
+    },
+    {
+      "path": "art/power_sindragosa.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_014.png",
+      "sourceId": "TB_BaconShop_HP_014",
+      "sha256": "fa70b79fb8d818cd2d5f8fc0d43aed94cddc3bb07f65134f3c60608fd3974171"
+    },
+    {
+      "path": "art/power_toki.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_028.png",
+      "sourceId": "TB_BaconShop_HP_028",
+      "sha256": "e329b534395b7c0a3b5e0d2f5e0f4152d4bbdfe90f9e5f766696e0009d756c48"
+    },
+    {
+      "path": "art/power_wagtoggle.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_037a.png",
+      "sourceId": "TB_BaconShop_HP_037a",
+      "sha256": "25d2a89c8fe9a32078d5b98c3dc4a617ccdf1ebee32c3ba5197af5e3e5a8f239"
+    },
+    {
+      "path": "art/power_yogg.png",
+      "url": "https://art.hearthstonejson.com/v1/orig/TB_BaconShop_HP_039.png",
+      "sourceId": "TB_BaconShop_HP_039",
+      "sha256": "62c0bd9a31b73b446f080694f978860af6ef643f1d661dd7d3bd0d886d4b4fd5"
+    }
+  ],
+  "failed": []
+}

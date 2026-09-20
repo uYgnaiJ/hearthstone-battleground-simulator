@@ -3,11 +3,22 @@
 #include "render.hpp"
 #include "audio.hpp"
 #include "motion.hpp"
+#include "perspective.hpp"
 #include <fstream>
 #include <chrono>
 #include <iomanip>
+#include <random>
 
 using namespace ui;
+static std::filesystem::path contentDirectory(const char* executable){
+#ifdef __APPLE__
+ auto directory=std::filesystem::canonical(GetApplicationDirectory());
+ if(directory.filename()=="MacOS")return directory.parent_path()/"Resources";
+ return directory;
+#else
+ return std::filesystem::absolute(executable).parent_path();
+#endif
+}
 static json emptyArray=json::array();
 static std::string s(const json& j,const char* key,const std::string& fallback=""){return j.is_object()&&j.contains(key)&&j[key].is_string()?j[key].get<std::string>():fallback;}
 static int num(const json& j,const char* key,int fallback=0){return j.is_object()&&j.contains(key)&&j[key].is_number()?j[key].get<int>():fallback;}
@@ -17,14 +28,17 @@ static bool keyword(const json& unit,const char* key){for(const auto& k:array(un
 static Rectangle rect(float x,float y,float w,float h){return {x,y,w,h};}
 struct Particle{Vector2 p,v;float age,life,size;Color color;int kind;};
 struct Floater{Vector2 p;std::string text;float age;Color color;};
-struct Hit{std::string zone;int index;Rectangle bounds;json unit;};
+struct Hit{std::string zone;int index;Rectangle bounds;json unit;
+ perspective::Plane plane{};Rectangle local{};bool projected=false;
+ bool contains(Vector2 p)const{return projected?plane.contains(p,local):CheckCollisionPointRec(p,bounds);}
+};
 struct Flight{json unit;Vector2 from,to;float age=0,life=.38f;int style=0;bool started=false;};
 struct ShieldWave{int uid;Vector2 position;float age=0;bool gain=true;};
 
 class NativeGame {
  RulesBridge bridge;GameAudio audio;
  json game=nullptr,cards=emptyArray,heroes=emptyArray,lab=nullptr,history=emptyArray,settings=json::object(),replay=nullptr,odds=nullptr;
- std::filesystem::path directory;std::string scene="menu",overlay,returnScene="menu",dataDirectory;
+ std::filesystem::path directory,diagnostics;std::string scene="menu",overlay,returnScene="menu",dataDirectory;
  bool busy=true,ready=false,exitGame=false,debug=false,paused=false,replayOnly=false,labReplay=false,showHelp=false;
  std::string notice;float noticeTime=0,shake=0;
  std::vector<Particle> particles;std::vector<Floater> floaters;std::vector<Hit> hits;
@@ -37,14 +51,15 @@ class NativeGame {
  bool dragging=false;Vector2 dragStart{};json dragged=nullptr;std::string dragZone;int dragIndex=-1;
  int heroPage=0,heroChoice=0,cardPage=0,historyChoice=0,historyRound=0,labSide=0,labSelected=-1,debugPlayer=0;
  bool labGolden=false,collectionForLab=false;
- std::string seed="35747",search,consoleLine,editorName,editorText,editorEffect;
+ std::string seed,labSeed="42",search,consoleLine,editorName,editorText,editorEffect;
  int difficulty=1,tierFilter=0;
  int animationFrame=0;float animationTime=0;bool frameImpact=false;float speed=1;
  bool resultCelebrated=false;float finishClock=0;bool finishHit=false;
- RenderTexture2D transitionFrame{};float transitionClock=2;std::string transitionLabel;
+ RenderTexture2D transitionFrame{},uiFrame{};float transitionClock=2;std::string transitionLabel;bool phaseCaptures[2][3]{};
  bool smokeEntryCaptured=false,smokeSummonCaptured=false;json statusReplay=nullptr;
  int smokeStage=0,smokeWait=0;bool smoke=false;float smokeTime=0;std::string smokeError;
- Texture2D board{};RenderTexture2D canvas{};float hoverStarted=0;int lastHoverUid=-1;std::string lastHoverId;
+ float cardLift=0,cardPitch=0,cardYaw=0,cardRoll=0;
+ Texture2D board{},combatBoard{};RenderTexture2D canvas{};float hoverStarted=0;int lastHoverUid=-1;std::string lastHoverId;
 
  void tell(const std::string& message){notice=message;noticeTime=5.5f;}
  bool presenting()const{return !recruitView.is_null();}
@@ -58,9 +73,62 @@ class NativeGame {
  const json& player()const{return presenting()?recruitView:game.is_object()&&!array(game,"players").empty()?game["players"][0]:emptyArray;}
  const json* definition(const std::string& id)const{const auto& pool=game.is_object()?array(game,"cards"):cards;for(const auto& c:pool)if(s(c,"id")==id)return &c;for(const auto& c:cards)if(s(c,"id")==id)return &c;return nullptr;}
  void spark(Vector2 p,Color color,int count=20,int kind=0){for(int i=0;i<count;i++){float a=GetRandomValue(0,628)/100.f,v=GetRandomValue(45,210);particles.push_back({p,{cosf(a)*v,sinf(a)*v},0,GetRandomValue(35,90)/100.f,GetRandomValue(2,6)*1.f,color,kind});}}
- bool transitioning()const{return transitionClock<1.05f;}
- void beginTransition(const std::string& label){if(!transitionFrame.id||!canvas.id)return;BeginTextureMode(transitionFrame);ClearBackground(BLANK);DrawTexturePro(canvas.texture,{0,0,W,-H},{0,0,W,H},{0,0},0,WHITE);EndTextureMode();transitionClock=0;transitionLabel=label;audio.play(2);}
- void drawTransition(){if(!transitioning()||!board.id)return;float t=motion::smooth(transitionClock/1.05f),roll=sinf(t*PI);for(int i=0;i<4;i++){bool right=i%2,bottom=i/2;float x=right?1210:0,y=bottom?650:0;Vector2 center={x+195,y+125};Rectangle src={x/W*board.width,y/H*board.height,390.f/W*board.width,250.f/H*board.height};float uv[]={src.x/board.width,src.y/board.height,src.width/board.width,src.height/board.height};BeginShaderMode(panelShader);SetShaderValue(panelShader,panelUv,uv,SHADER_UNIFORM_VEC4);DrawTexturePro(board,src,{center.x+(right?1:-1)*35*roll,center.y+(bottom?1:-1)*25*roll,390,250},{195,125},((right==bottom)?1:-1)*70*roll,Fade(WHITE,.9f));EndShaderMode();}float a=sinf(transitionClock/1.05f*PI);DrawRectangle(0,0,W,H,Fade({35,19,15,255},a*.22f));if(a>.35f){panel({577,374,446,105},{60,35,24,245});text(transitionLabel,800,408,36,Fade(Pale,a),true,true);}}
+ bool transitioning()const{return transitionClock<motion::phaseDuration;}
+ void beginTransition(const std::string& label){
+  if(!transitionFrame.id||!uiFrame.id)return;
+  BeginTextureMode(transitionFrame);ClearBackground(BLANK);
+  DrawTexturePro(uiFrame.texture,{0,0,W,-H},{0,0,W,H},{0,0},0,WHITE);
+  EndTextureMode();transitionClock=0;transitionLabel=label;audio.play(2);
+ }
+ void drawTransition(){
+  if(!transitioning()){DrawTexturePro(uiFrame.texture,{0,0,W,-H},{0,0,W,H},{0,0},0,WHITE);return;}
+  float t=transitionClock/motion::phaseDuration;
+  float oldAlpha=1-motion::smooth((t-.22f)/.26f);
+  float newAlpha=motion::smooth((t-.49f)/.27f);
+  auto region=[&](Rectangle r,bool persistent){
+   BeginScissorMode((int)r.x,(int)r.y,(int)r.width,(int)r.height);
+   if(persistent)DrawTexturePro(uiFrame.texture,{0,0,W,-H},{0,0,W,H},{0,0},0,WHITE);
+   else{
+    if(oldAlpha>0)DrawTexturePro(transitionFrame.texture,{0,0,W,-H},{0,0,W,H},{0,0},0,Fade(WHITE,oldAlpha));
+    if(newAlpha>0)DrawTexturePro(uiFrame.texture,{0,0,W,-H},{0,0,W,H},{0,0},0,Fade(WHITE,newAlpha));
+   }
+   EndScissorMode();
+  };
+  // The lobby, friendly warband and hero stay on the fixed centre of the board.
+  region({0,0,250,H},true);
+  region({250,435,1120,345},true);
+  region({250,0,1120,435},false);
+  region({250,780,1120,120},false);
+  region({1370,0,230,H},false);
+  float a=motion::smooth(t/.20f)*(1-motion::smooth((t-.76f)/.24f));
+  if(a>0){panel({619,378,362,88},{60,35,24,245});text(transitionLabel,800,405,32,Fade(Pale,a),true,true);}
+ }
+ void drawBoardCorners(){
+  bool combat=scene=="combat";
+  bool toCombat=transitionLabel=="COMBAT";
+  const Rectangle panels[]={{0,0,460,235},{1140,0,460,235},{0,660,390,240},{1210,660,390,240}};
+  for(int i=0;i<4;i++){
+   Rectangle r=panels[i];Vector2 center{r.x+r.width/2,r.y+r.height/2};
+   auto flip=motion::cornerFlip(transitionClock,i,toCombat);
+   bool faceCombat=transitioning()?(flip.incoming?toCombat:!toCombat):combat;
+   Texture2D face=faceCombat&&combatBoard.id?combatBoard:board;
+   if(transitioning()){
+    // This recess replaces the old scenery, so it cannot show through the turn.
+    DrawTexturePro(board,{board.width*.25f,board.height*.89f,board.width*.50f,board.height*.075f},r,{0,0},0,{89,75,63,255});
+    DrawRectangleLinesEx(r,5,{61,36,23,255});
+    DrawLineEx({r.x+7,center.y},{r.x+r.width-7,center.y},8,{47,30,23,255});
+    for(float x:{r.x+10,r.x+r.width-10}){DrawCircle(x,center.y,9,{117,80,40,255});DrawCircle(x,center.y,4,{38,26,21,255});}
+   }
+   perspective::Plane pose{center,transitioning()?flip.angle:0,0,0,1,0,850};
+   perspective::Scope turned(pose);
+   if(transitioning()){
+    DrawRectangleRec({r.x,r.y+6,r.width,r.height},{72,43,25,255});
+   }
+   float shade=transitioning()?1-.40f*std::abs(sinf(flip.angle)):1;
+   Rectangle src{r.x/W*face.width,r.y/H*face.height,r.width/W*face.width,r.height/H*face.height};
+   DrawTexturePro(face,src,r,{0,0},0,{(unsigned char)(255*shade),(unsigned char)(255*shade),(unsigned char)(255*shade),255});
+  }
+ }
  bool powerOrb(const json& p,Vector2 center,bool usable=false){if(!p.is_object())return false;const auto& hero=p["hero"];bool passive=flag(hero,"passive"),used=flag(p,"powerUsed"),enabled=usable&&!passive&&!used&&!busy&&!presenting()&&!transitioning()&&num(p,"gold")>=num(hero,"cost");bool hot=!blocked&&Vector2Distance(mouse,center)<43;wantsPointer|=hot&&enabled;DrawCircleV({center.x+3,center.y+5},46,{26,15,13,230});DrawCircleV(center,44,Gold);DrawCircleV(center,39,{49,30,22,255});DrawCircleGradient(center,35,enabled?Color{78,160,210,255}:Color{63,102,128,255},{25,42,63,255});for(int i=0;i<6;i++){float a=i*PI/3-.3f;Vector2 outer={center.x+cosf(a)*27,center.y+sinf(a)*27};DrawLineEx(center,outer,2,Fade({173,225,248,255},.45f));}star(center.x,center.y,21,{161,224,245,255});std::string powerArt="art/power_"+s(hero,"key")+".png";if(texture(powerArt).id)portrait(powerArt,{center.x-34,center.y-34,68,68});DrawCircleLines(center.x,center.y,32,Fade(Pale,.7f));if(hot)DrawCircleLines(center.x,center.y,46,Pale);gem(center.x-30,center.y+31,17,{35,91,193,255},std::to_string(num(hero,"cost")),21,6);if(passive||used)text(passive?"Passive":"Used",center.x,center.y+48,14,Gold,true,true);else text(s(hero,"power"),center.x,center.y+48,15,Pale,true,true);if(hot){float x=center.x+55,y=std::clamp(center.y-52,12.f,730.f);panel({x,y,318,120});text(s(hero,"power"),x+15,y+12,20,Pale,true);wrapped(s(hero,"text"),x+15,y+43,288,16,Cream);}if(hot&&enabled&&clicked){audio.play(3);return true;}return false;}
  void setReplay(json value,bool only,bool fromLab=false){if(scene=="tavern")beginTransition("COMBAT");replay=std::move(value);if(replay.contains("result")&&num(replay["result"],"rightId",-1)==0){auto& r=replay["result"];std::swap(r["leftId"],r["rightId"]);for(auto& f:r["frames"])std::swap(f["left"],f["right"]);}replayOnly=only;labReplay=fromLab;animationFrame=0;animationTime=0;paused=false;frameImpact=false;resultCelebrated=false;finishClock=0;finishHit=false;flights.clear();shieldWaves.clear();scene="combat";selectedZone.clear();audio.play(2);}
  void receive(){json response;while(bridge.poll(response)){busy=false;if(!response.value("ok",false)){if(!pendingDrag.is_null()){flights.push_back({pendingDrag,pendingDragPosition,originalPosition(pendingDrag),0,.22f});pendingDrag=nullptr;}tell(s(response,"error","Unknown rules error"));if(smoke)smokeError=s(response,"error");continue;}
@@ -77,7 +145,14 @@ class NativeGame {
   if(response.contains("odds")){odds=response["odds"];tell("Simulation complete.");}
   if(response.contains("message"))tell(s(response,"message"));
  }}
- void drawBackground(){if(board.id)DrawTexturePro(board,{0,0,(float)board.width,(float)board.height},{0,0,1600,900},{0,0},0,WHITE);else ClearBackground({92,53,29,255});
+ void drawBackground(){
+  ClearBackground({24,16,20,255});
+  if(board.id){
+   // Dark rim underneath the raised tabletop, then its painted top plane.
+   auto base=perspective::table();base.lift=-16;
+   {perspective::Scope plane(base);DrawRectangleRounded({-5,-5,1610,910},.025f,8,{40,23,17,255});}
+   {perspective::Scope plane(perspective::table());BeginShaderMode(boardShader);DrawTexturePro(board,{0,0,(float)board.width,(float)board.height},{0,0,1600,900},{0,0},0,WHITE);drawBoardCorners();EndShaderMode();}
+  }
   // Gently animated hearth light on the physical board corners.
   for(int i=0;i<3;i++){float a=.055f+.014f*sinf(ui::time*2.1f+i);DrawCircleGradient({35,410},110,Fade(ORANGE,a),Fade(ORANGE,0));DrawCircleGradient({1540,520},110,Fade(ORANGE,a),Fade(ORANGE,0));}
  }
@@ -110,12 +185,19 @@ class NativeGame {
   if(rows.empty())rows.push_back({"No active buffs","Base stats and card abilities"});
   int visible=std::min(6,(int)rows.size());buffScroll=std::clamp(buffScroll-(int)GetMouseWheelMove(),0,std::max(0,(int)rows.size()-visible));float listH=35+visible*38+((int)rows.size()>visible?16:0),totalH=354+listH;x=std::clamp(x,12.f,1288.f);y=std::clamp(y,12.f,888-totalH);cardTooltip(u,x+24,y);panel({x,y+354,300,listH},{43,34,28,250});text("ENCHANTMENTS",x+150,y+364,15,Gold,true,true);for(int i=0;i<visible;i++){const auto& row=rows[buffScroll+i];float yy=y+390+i*38;text(row.first,x+15,yy,14,{168,236,135,255},true);text(row.second,x+15,yy+17,13,Cream);}if((int)rows.size()>visible)text("Scroll: "+std::to_string(buffScroll+1)+"-"+std::to_string(buffScroll+visible)+" / "+std::to_string(rows.size()),x+150,y+listH+338,11,Gold,false,true);
  }
- void drawMinion(const json& u,Vector2 center,float scale=1,float alpha=1,bool selected=false,bool shop=false){if(!drawingFlight&&moving(u))return;float w=108*scale,h=141*scale;Color gold=flag(u,"golden")?Color{255,199,61,255}:Color{165,128,80,255};float pulse=.5f+.5f*sinf(ui::time*5);int cx=(int)center.x,cy=(int)center.y;
-  DrawEllipse(cx+5,cy+15,w*.62f,h*.53f,Fade(BLACK,.35f*alpha));
+ void drawMinion(const json& u,Vector2 center,float scale=1,float alpha=1,bool selected=false,bool shop=false){if(!drawingFlight&&moving(u))return;
+  bool spatial=scene=="tavern"||scene=="combat"||scene=="lab";
+  float lift=cardLift+(selected?10.f:0.f);
+  perspective::Plane pose{center,spatial?.26f+cardPitch:0.f,cardYaw,cardRoll,spatial?perspective::depthScale(center.y):1.f,lift,1000};
+  if(spatial)perspective::shadow(center,57*scale,67*scale,lift,alpha);
+  perspective::Scope plane(pose);
+  float w=108*scale,h=141*scale;Color gold=flag(u,"golden")?Color{255,199,61,255}:Color{165,128,80,255};float pulse=.5f+.5f*sinf(ui::time*5);int cx=(int)center.x,cy=(int)center.y;
+  if(!spatial)DrawEllipse(cx+5,cy+15,w*.62f,h*.53f,Fade(BLACK,.35f*alpha));
   bool auraEmitter=flag(u,"auraSource")||s(u,"effect")=="Murloc Warleader"||s(u,"effect")=="Dire Wolf Alpha"||s(u,"effect")=="Mal'Ganis"||s(u,"effect")=="Siegebreaker"||s(u,"effect")=="Phalanx Commander"||s(u,"effect")=="Old Murk-Eye";
   if(!shop&&!drawingFlight&&(scene=="tavern"||scene=="combat"||scene=="lab")){if(auraEmitter)auraGlow(center,w*1.2f,h*1.1f,ui::time*.43f,.45f*alpha);else if(num(u,"auraAttack")||num(u,"auraHealth"))auraGlow(center,w,h,ui::time*.43f,.18f*alpha);}
   if(selected){DrawEllipse(cx,cy,w*.64f,h*.60f,Fade({52,207,104,255},(.22f+.15f*pulse)*alpha));DrawEllipseLines(cx,cy,w*.62f,h*.59f,Fade({72,242,108,255},alpha));}
-  if(keyword(u,"TAUNT")){Vector2 pts[7]={{center.x-w*.48f,center.y-h*.57f},{center.x+w*.48f,center.y-h*.57f},{center.x+w*.63f,center.y-h*.40f},{center.x+w*.58f,center.y+h*.28f},{center.x,center.y+h*.66f},{center.x-w*.58f,center.y+h*.28f},{center.x-w*.63f,center.y-h*.40f}};for(int i=0;i<7;i++){DrawTriangle(center,pts[(i+1)%7],pts[i],Fade(i<3?Color{79,89,98,255}:Color{54,64,75,255},alpha));DrawLineEx(pts[i],pts[(i+1)%7],5*scale,Fade({169,175,173,255},alpha));}}
+  if(keyword(u,"TAUNT")){Vector2 pts[7]={{center.x-w*.48f,center.y-h*.57f},{center.x+w*.48f,center.y-h*.57f},{center.x+w*.57f,center.y-h*.40f},{center.x+w*.54f,center.y+h*.28f},{center.x,center.y+h*.66f},{center.x-w*.54f,center.y+h*.28f},{center.x-w*.57f,center.y-h*.40f}};for(int i=0;i<7;i++){DrawTriangle(center,pts[(i+1)%7],pts[i],Fade(i<3?Color{79,89,98,255}:Color{54,64,75,255},alpha));DrawLineEx(pts[i],pts[(i+1)%7],6*scale,Fade({57,53,49,255},alpha));DrawLineEx(pts[i],pts[(i+1)%7],3*scale,Fade(i<3?Color{213,208,188,255}:Color{131,127,117,255},alpha));}}
+  for(int edge=7;edge>0;edge--)DrawEllipse(cx,cy+edge*scale,w*.56f,h*.55f,Fade(edge>3?Color{47,29,19,255}:gold,alpha));
   DrawEllipse(cx,cy,w*.55f,h*.54f,Fade({39,29,22,255},alpha));portrait(s(u,"art"),{center.x-w*.47f,center.y-h*.48f,w*.94f,h*.96f},Fade(WHITE,alpha));minionRim(center,w*1.13f,h*1.14f,flag(u,"golden"),Fade(WHITE,alpha));
 
   if(keyword(u,"DIVINE_SHIELD")){DrawEllipse(cx,cy,w*.62f,h*.60f,Fade({255,209,45,255},.27f*alpha));for(int k=0;k<96;k++){float a=k*2*PI/96,b=(k+1)*2*PI/96;DrawLineEx({center.x+cosf(a)*w*.61f,center.y+sinf(a)*h*.59f},{center.x+cosf(b)*w*.61f,center.y+sinf(b)*h*.59f},(4.5f+pulse)*scale,Fade({255,225,98,255},alpha));}DrawEllipseLines(cx-3*scale,cy-4*scale,w*.56f,h*.54f,Fade(WHITE,.8f*alpha));DrawRectangleRounded({center.x-51*scale,center.y-h*.67f,102*scale,20*scale},.5f,8,Fade({110,70,8,255},alpha));text("DIVINE SHIELD",center.x,center.y-h*.67f+3*scale,12*scale,Fade({255,244,162,255},alpha),true,true);}
@@ -126,7 +208,7 @@ class NativeGame {
   if(shop){DrawCircle(cx-(int)(w*.40f),cy-(int)(h*.42f),15*scale,Fade({92,53,124,255},alpha));text(std::to_string(num(u,"tier",1)),center.x-w*.4f,center.y-h*.42f-10*scale,18*scale,Fade(Pale,alpha),true,true);}
   if(keyword(u,"WINDFURY"))text(">>",center.x,center.y+h*.43f,18*scale,Fade(Cream,alpha),true,true);
  }
- Vector2 position(int index,int count,bool upper)const {float spacing=142,start=817-(count-1)*spacing/2;return {start+index*spacing,upper?286.f:525.f};}
+ Vector2 position(int index,int count,bool upper)const {float spacing=142,start=817-(count-1)*spacing/2;return perspective::boardPoint({start+index*spacing,upper?286.f:525.f});}
  void nextRecruitStep(){if(recruitSteps.empty()){recruitView=nullptr;recruitKind.clear();return;}json before=recruitView,step=recruitSteps.front();recruitSteps.pop_front();recruitView=step["player"];recruitKind=s(step,"kind");recruitSource=num(step,"source",-1);recruitClock=0;int summons=0;for(const auto& u:array(recruitView,"board")){bool known=false;for(const auto& old:array(before,"board"))if(num(old,"uid")==num(u,"uid"))known=true;if(!known)summons++;}recruitDuration=recruitKind=="enter"?.44f:recruitKind=="battlecry"?.58f+summons*.1f:.16f;animateRecruit(before,recruitView,recruitKind);
   if(recruitKind=="battlecry"){for(int i=0;i<(int)array(recruitView,"board").size();i++){const auto& u=recruitView["board"][i];Vector2 pos=position(i,recruitView["board"].size(),false);if(num(u,"uid")==recruitSource){spark(pos,{183,141,246,255},20);audio.play(2);}for(const auto& old:array(before,"board"))if(num(old,"uid")==num(u,"uid")){int da=num(u,"attack")-num(old,"attack"),dh=num(u,"health")-num(old,"health");if(da>0||dh>0)floaters.push_back({pos,"+"+std::to_string(da)+" / +"+std::to_string(dh),0,{143,244,128,255}});}}}
  }
@@ -137,17 +219,25 @@ class NativeGame {
    for(const char* source:{"shop","hand"}){const auto& old=array(before,source);for(int j=0;j<(int)old.size();j++)if(num(old[j],"uid")==num(u,"uid"))from=std::string(source)=="shop"?position(j,old.size(),true):handPosition(j,old.size());}if(num(pendingDrag,"uid",-1)==num(u,"uid"))from=pendingDragPosition;if(boardZone&&kind=="battlecry")flights.push_back({u,to,to,-.12f*popIndex++,.36f,1});else flights.push_back({u,from,to,0,.30f});
   }}
  }
+ void drawDraggedCard(){drawingFlight=true;cardLift=24;cardPitch=.12f;cardYaw=std::clamp((mouse.x-dragStart.x)/650.f,-.38f,.38f);cardRoll=cardYaw*.22f;drawMinion(dragged,mouse,1.08f,1,true);cardLift=cardPitch=cardYaw=cardRoll=0;drawingFlight=false;}
  void drawFlights(float dt){drawingFlight=true;for(auto& f:flights){if(overlay.empty()&&!debug)f.age+=dt*(presenting()?speed:1);if(f.age<0)continue;if(!f.started){f.started=true;if(f.style==1){spark(f.to,{187,132,250,255},19);audio.play(2);}}
-  float t=std::min(1.f,f.age/f.life),ease=1-powf(1-t,3);Vector2 p=Vector2Lerp(f.from,f.to,ease);float scale=1,alpha=1;if(f.style==1){float k=t-1;scale=std::max(.08f,1+2.7f*k*k*k+1.7f*k*k);alpha=std::min(1.f,t*5);}else{p.y-=sinf(t*PI)*28;scale=.96f+.09f*sinf(t*PI);if(t>.88f&&!f.unit.is_null())scale=1-.07f*sinf((t-.88f)/.12f*PI);}drawMinion(f.unit,p,scale,alpha);
+  float t=std::min(1.f,f.age/f.life),ease=1-powf(1-t,3);Vector2 p=Vector2Lerp(f.from,f.to,ease);float scale=1,alpha=1;if(f.style==1){float k=t-1;scale=std::max(.08f,1+2.7f*k*k*k+1.7f*k*k);alpha=std::min(1.f,t*5);}else{p.y-=sinf(t*PI)*28;scale=.96f+.09f*sinf(t*PI);if(t>.88f&&!f.unit.is_null())scale=1-.07f*sinf((t-.88f)/.12f*PI);}cardLift=sinf(t*PI)*30;cardPitch=sinf(t*PI)*.20f;cardYaw=std::clamp((f.to.x-f.from.x)/800.f,-.32f,.32f)*sinf(t*PI);cardRoll=cardYaw*.25f;drawMinion(f.unit,p,scale,alpha);cardLift=cardPitch=cardYaw=cardRoll=0;
  }drawingFlight=false;flights.erase(std::remove_if(flights.begin(),flights.end(),[](const Flight& f){return f.age>=f.life;}),flights.end());}
- void minionRow(const json& units,const std::string& zone,bool upper){int count=(int)units.size();for(int i=0;i<count;i++){Vector2 pos=position(i,count,upper);bool sel=selectedZone==zone&&selectedIndex==i;Rectangle r{pos.x-60,pos.y-80,120,170};bool hot=hover(r);drawMinion(units[i],pos,hot?1.055f:1,1,sel||hot,zone=="shop");if(zone!="preview")hits.push_back({zone,i,r,units[i]});if(hot&&!moving(units[i])){wantsPointer=true;hoverUnit=units[i];}}}
+ void minionRow(const json& units,const std::string& zone,bool upper){int count=(int)units.size();for(int i=0;i<count;i++){Vector2 pos=position(i,count,upper);bool sel=selectedZone==zone&&selectedIndex==i;perspective::Plane pose{pos,.26f,0,0,perspective::depthScale(pos.y),0,1000};Rectangle local{pos.x-60,pos.y-80,120,170};Rectangle r=pose.bounds(local);bool hot=!blocked&&pose.contains(mouse,local);drawMinion(units[i],pos,hot?1.055f:1,1,sel||hot,zone=="shop");if(zone!="preview")hits.push_back({zone,i,r,units[i],pose,local,true});if(hot&&!moving(units[i])){wantsPointer=true;hoverUnit=units[i];}}}
  void heroPortrait(const json& hero,Vector2 center,float scale=1,int health=-999){float w=91*scale,h=113*scale;DrawEllipse((int)center.x+3,(int)center.y+6,w*.61f,h*.58f,{22,14,18,190});DrawEllipse((int)center.x,(int)center.y,w*.59f,h*.57f,{128,77,35,255});DrawEllipse((int)center.x,(int)center.y,w*.54f,h*.53f,Gold);portrait(s(hero,"art"),{center.x-w*.49f,center.y-h*.49f,w*.98f,h*.98f});DrawEllipseLines((int)center.x,(int)center.y,w*.55f,h*.53f,{246,205,116,255});if(health!=-999)gem(center.x+w*.46f,center.y+h*.4f,20*scale,{155,29,36,255},std::to_string(health),23*scale,5);}
  void drawLobby(const json& players){std::vector<json> sorted;for(const auto& p:players)sorted.push_back(p);std::stable_sort(sorted.begin(),sorted.end(),[](const json&a,const json&b){return num(a,"health")>num(b,"health");});for(int i=0;i<(int)sorted.size();i++){const auto& p=sorted[i];float y=170+i*66.f;float x=128;Color tint=num(p,"health")>0?WHITE:GRAY;DrawRectangleRounded({87,y-25,79,59},.16f,8,num(p,"id")==0?Color{93,94,43,200}:Color{38,24,22,140});heroPortrait(p["hero"],{x-1,y+3},.40f);gem(x+27,y+20,12,{150,38,37,255},num(p,"health")>0?std::to_string(num(p,"health")):"X",15,5);text(std::to_string(p.value("placement",i+1)),95,y-20,13,Pale,true);for(int t=0;t<num(p,"tier",1);t++)star(99+t*9,y+31,3.5f,Gold);
   if(hover({82,y-26,91,63})){panel({180,y-28,260,73});text(s(p["hero"],"name"),310,y-16,20,Pale,true,true);text(s(p,"name")+"  |  Tavern "+std::to_string(num(p,"tier")),310,y+11,15,Cream,false,true);}}
  }
+ void chooseNewMatch(){
+  static std::mt19937 random(std::random_device{}());
+  std::uniform_int_distribution<uint32_t> distribution(1,UINT32_MAX);
+  std::string next;
+  do{next=std::to_string(distribution(random));}while(next==seed);
+  seed=next;scene="heroes";overlay.clear();focus.clear();heroChoice=0;heroPage=0;
+ }
  void menu(){DrawRectangle(0,0,W,H,{17,10,20,95});panel({475,142,650,632},{56,29,23,245});for(int i=0;i<3;i++)DrawCircleGradient({800,227},150-i*25,Fade({47,147,211,255},.035f),BLANK);star(800,211,45,{67,165,213,255});DrawCircleLines(800,212,53,Gold);text("BATTLEGROUNDS",800,282,45,Pale,true,true);text("THE LOCAL TAVERN",800,336,17,Gold,true,true);float y=391;
   if(game.is_object()){if(btn("Resume game",{610,y,380,56},true,true)){scene=s(game,"phase")=="recruit"?"tavern":"combat";if(scene=="combat"&&game.contains("lastCombat"))setReplay({{"result",game["lastCombat"]},{"players",game["players"]},{"round",game["round"]}},false);}y+=69;}
-  if(btn("Play Battlegrounds",{610,y,380,56})){scene="heroes";heroChoice=0;}y+=70;
+  if(btn("Play Battlegrounds",{610,y,380,56})){chooseNewMatch();}y+=70;
   if(btn("Card Workshop",{550,y,240,49},true,false,20)){scene="collection";collectionForLab=false;cardPage=0;}
   if(btn("Combat Lab",{810,y,240,49},true,false,20)){scene="lab";if(lab.is_null())send({{"type","lab.new"}});}y+=63;
   if(btn("Matchbook",{550,y,240,49},true,false,20)){scene="history";send({{"type","history"}});}
@@ -166,53 +256,88 @@ class NativeGame {
   if(hotIndex<0&&handHover>=0&&handHover<n){auto p=handPosition(handHover,n);if(hover({p.x-55,716,110,184}))hotIndex=handHover;}
   handHover=dragging?-1:hotIndex;
   auto draw=[&](int i){auto p=handPosition(i,n);int uid=num(hand[i],"uid");float& lift=handLift[uid];lift+=((i==handHover?1.f:0.f)-lift)*std::min(1.f,ui::delta*18);float top=762-46*lift;
+   float fan=n>1?(i-(n-1)*.5f)*.035f:0;
+   perspective::Plane pose{{p.x,top+74},-.12f,-fan*.65f,fan*(1-lift),1+lift*.035f,0,900};
+   Rectangle local{p.x-51,top,102,145};
    if(!moving(hand[i])){if(i==handHover){wantsPointer=true;DrawRectangleRounded({p.x-54,top-3,108,151},.1f,8,{81,167,93,180});hoverUnit=hand[i];}
+    perspective::shadow({p.x,top+74},51,69,12+lift*35);
+    perspective::Scope plane(pose);
+    DrawRectangleRounded({p.x-52,top+5,106,147},.08f,6,{61,37,23,255});
     cardVisual(hand[i],{p.x-57,top-2,114,153},false);
-   }hits.push_back({"hand",i,{p.x-51,top,102,145},hand[i]});
+   }hits.push_back({"hand",i,pose.bounds(local),hand[i],pose,local,true});
   };for(int i=0;i<n;i++)if(i!=handHover)draw(i);if(handHover>=0)draw(handHover);
-  if(n==0)text("Your next recruit awaits",812,838,20,{201,161,102,255},true,true);
+
  }
  void dragGuide(){if(!dragging||dragged.is_null()||scene!="tavern")return;std::string hint;Color color={102,207,113,255};Rectangle area{285,427,1040,177};bool valid=false;
   if(dragZone=="shop"){valid=num(player(),"gold")>=3&&array(player(),"hand").size()<10;area={465,741,705,145};hint=valid?"Release below the shop to recruit  -  3 gold":num(player(),"gold")<3?"Not enough gold":"Your hand is full";}
   else if(dragZone=="board"){if(mouse.y<350){area={285,214,1040,153};valid=true;hint="Release to sell  +1 gold";color=Gold;}else{valid=true;hint="Release to set attack order";}}
-  else{valid=array(player(),"board").size()<7;hint=valid?"Release to play  -  drop over a minion to target":"Your warband is full";if(keyword(dragged,"MAGNETIC")&&(IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT))){hint="Drop on a friendly Mech to magnetize";for(const auto& h:hits)if(h.zone=="board"&&(s(h.unit,"tribe")=="MECHANICAL"||s(h.unit,"tribe")=="ALL")){DrawEllipseLines(h.bounds.x+60,h.bounds.y+80,65,85,SKYBLUE);if(CheckCollisionPointRec(mouse,h.bounds))valid=true;}}}
-  if(!valid)color={217,85,62,255};DrawRectangleRounded(area,.13f,12,Fade(color,.045f));DrawRectangleRoundedLinesEx(area,.13f,12,2,Fade(color,.65f));panel({461,367,709,49});text(hint,815,382,18,color,true,true);
+  else{valid=array(player(),"board").size()<7;hint=valid?"Release to play  -  drop over a minion to target":"Your warband is full";if(keyword(dragged,"MAGNETIC")&&(IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT))){hint="Drop on a friendly Mech to magnetize";for(const auto& h:hits)if(h.zone=="board"&&(s(h.unit,"tribe")=="MECHANICAL"||s(h.unit,"tribe")=="ALL")){DrawEllipseLines(h.bounds.x+60,h.bounds.y+80,65,85,SKYBLUE);if(h.contains(mouse))valid=true;}}}
+  if(!valid)color={217,85,62,255};DrawRectangleRounded(area,.13f,12,Fade(color,.045f));DrawRectangleRoundedLinesEx(area,.13f,12,2,Fade(color,.65f));text(hint,815,395,18,valid?Color{40,82,44,255}:Color{135,40,28,255},true,true);
  }
  void selectionControls(){if(dragging||!pendingDrag.is_null()||selectedZone.empty()||selectedUnit.is_null())return;panel({1039,673,348,122});text(s(selectedUnit,"name"),1213,686,20,Pale,true,true);
   if(selectedZone=="shop"){if(btn("Recruit  (3)",{1076,723,274,48},num(player(),"gold")>=3,false,21))action({{"type","buy"},{"index",selectedIndex}});}
   if(selectedZone=="hand"){if(btn("Play",{1057,723,145,48},array(player(),"board").size()<7,false,21))action({{"type","play"},{"index",selectedIndex}});if(keyword(selectedUnit,"MAGNETIC")){if(btn("Magnetize",{1215,723,153,48},true,false,18))tell("Drag this Magnetic minion onto a friendly Mech while holding Shift.");}else text("Drag onto a minion\nfor a target",1284,726,14,Cream,false,true);}
   if(selectedZone=="board"){if(btn("Sell +1",{1055,725,135,45},true,false,19))action({{"type","sell"},{"index",selectedIndex}});if(btn("<",{1203,725,69,45},selectedIndex>0,false,22))action({{"type","move"},{"from",selectedIndex},{"to",selectedIndex-1}});if(btn(">",{1287,725,69,45},selectedIndex+1<(int)array(player(),"board").size(),false,22))action({{"type","move"},{"from",selectedIndex},{"to",selectedIndex+1}});}
  }
- void tavern(){if(game.is_null()){scene="menu";return;}const auto& p=player();text("Bob's Tavern",810,52,31,Pale,true,true);text("Round "+std::to_string(num(game,"round")),809,96,16,Gold,true,true);drawLobby(array(game,"players"));
-  // Shop and board occupy the two halves of the real game table.
-  text("RECRUIT",815,174,19,{112,69,34,255},true,true);minionRow(array(p,"shop"),"shop",true);
-  for(int i=0;i<7;i++){auto pos=position(i,7,false);DrawEllipse((int)pos.x,(int)pos.y,59,80,{94,58,30,12});DrawEllipseLines((int)pos.x,(int)pos.y,59,80,{128,87,40,40});}
+ bool shopControl(Vector2 c,int kind,int cost,bool enabled,const std::string& label){
+  bool hot=!blocked&&Vector2Distance(mouse,c)<36;
+  enabled=enabled&&!busy&&!transitioning()&&!presenting();wantsPointer|=hot&&enabled;
+  float press=hot&&down&&enabled?3:0;c.y+=press;
+  DrawCircleV({c.x+2,c.y+6},39,{30,21,24,230});
+  DrawCircleV(c,38,{83,57,36,255});DrawCircleV({c.x,c.y-1},35,hot&&enabled?Pale:Gold);
+  DrawCircleV(c,31,kind==2?Color{44,91,119,255}:Color{94,62,112,255});
+  DrawCircleGradient(c,28,kind==2?Color{98,166,184,255}:Color{160,114,175,255},kind==2?Color{31,61,92,255}:Color{67,41,82,255});
+  Color ink=enabled?Pale:Color{164,149,156,255};
+  if(kind==0){star(c.x,c.y-1,19,ink);star(c.x,c.y-1,11,{135,94,148,255});}
+  if(kind==1){for(int i=0;i<30;i++){float a=(i*8+35)*DEG2RAD,b=(i*8+43)*DEG2RAD;DrawLineEx({c.x+cosf(a)*17,c.y+sinf(a)*17},{c.x+cosf(b)*17,c.y+sinf(b)*17},4,ink);}DrawTriangle({c.x+3,c.y-25},{c.x+3,c.y-8},{c.x+17,c.y-17},ink);}
+  if(kind==2)for(int i=0;i<6;i++){float a=i*PI/3;Vector2 v={cosf(a),sinf(a)},n={-v.y,v.x};DrawLineEx(c,Vector2Add(c,Vector2Scale(v,20)),3,ink);for(float side:{-1.f,1.f})DrawLineEx(Vector2Add(c,Vector2Scale(v,12)),Vector2Add(Vector2Add(c,Vector2Scale(v,7)),Vector2Scale(n,side*5)),2,ink);}
+  if(cost>=0)gem(c.x+26,c.y+25,15,{193,143,37,255},std::to_string(cost),19,10);
+  text(label,c.x,c.y+44,15,Pale,true,true);
+  if(hot){std::string hint=kind==0?"Raise your Tavern Tier":kind==1?"Refresh the shop (R)":"Keep these minions (F)";text(hint,808,223,16,Ink,false,true);}
+  if(hot&&enabled&&clicked){audio.play(3);return true;}return false;
+ }
+ bool turnControl(const std::string& label,bool enabled){
+  Vector2 c{1462,415};bool hot=!blocked&&CheckCollisionPointRec(mouse,{1385,381,155,70});
+  enabled=enabled&&!busy&&!transitioning();wantsPointer|=hot&&enabled;
+  if(hot&&down&&enabled)c.y+=3;
+  DrawEllipse(c.x+2,c.y+6,80,39,{34,23,20,255});DrawEllipse(c.x,c.y,80,38,{106,74,39,255});
+  DrawEllipse(c.x,c.y-2,76,34,hot&&enabled?Pale:Gold);DrawEllipse(c.x,c.y,71,29,enabled?Color{140,104,54,255}:Color{81,71,58,255});
+  DrawEllipseLines(c.x,c.y-3,67,24,{189,155,97,255});text(label,c.x,c.y-12,23,enabled?Pale:Color{177,164,140,255},true,true);
+  if(hot&&enabled&&clicked){audio.play(3);return true;}return false;
+ }
+ void tavern(){if(game.is_null()){scene="menu";return;}const auto& p=player();drawLobby(array(game,"players"));
+  heroPortrait(json{{"art","art/bob.png"}},{808,119},1.08f);
+  text("Bob",808,185,19,Pale,true,true);
+  text("Round "+std::to_string(num(game,"round")),1459,480,16,Cream,true,true);
+  minionRow(array(p,"shop"),"shop",true);
+  if(dragging&&dragZone!="shop")for(int i=0;i<7;i++){auto pos=position(i,7,false);perspective::Scope slot({pos,.26f,0,0,perspective::depthScale(pos.y),0,1000});DrawEllipseLines((int)pos.x,(int)pos.y,59,80,{128,87,40,70});}
   minionRow(array(p,"board"),"board",false);
   if(flag(p,"frozen")){for(const auto& h:hits)if(h.zone=="shop"){DrawEllipse((int)(h.bounds.x+60),(int)(h.bounds.y+80),64,88,{98,199,235,35});DrawEllipseLines((int)(h.bounds.x+60),(int)(h.bounds.y+80),64,88,{174,237,255,210});}text("FROZEN",812,392,19,{223,250,255,255},true,true);}
-  if(btn("Refresh  1",{1179,135,179,48},num(p,"gold")>=1,false,20))action({{"type","refresh"}});
-  if(btn(flag(p,"frozen")?"Unfreeze":"Freeze",{1179,195,179,46},true,true,20))action({{"type","freeze"}});
-  if(btn(num(p,"tier")>=6?"Tavern 6":"Upgrade  "+std::to_string(num(p,"upgrade")),{262,135,186,48},num(p,"tier")<6&&num(p,"gold")>=num(p,"upgrade"),false,20))action({{"type","upgrade"}});
-  for(int i=0;i<num(p,"tier");i++)star(279+i*25,211,10,{169,97,153,255});
-  if(btn(busy?"Thinking":"End turn",{1390,386,151,67},array(p,"discovers").empty(),false,23))send({{"type","end"}});
-  text("Buy 3  /  Sell 1",1454,469,15,Cream,false,true);
+  if(shopControl({950,126},1,1,num(p,"gold")>=1,"Refresh"))action({{"type","refresh"}});
+  if(shopControl({1064,126},2,-1,true,flag(p,"frozen")?"Unfreeze":"Freeze"))action({{"type","freeze"}});
+  if(shopControl({645,126},0,num(p,"tier")>=6?-1:num(p,"upgrade"),num(p,"tier")<6&&num(p,"gold")>=num(p,"upgrade"),"Upgrade"))action({{"type","upgrade"}});
+  for(int i=0;i<num(p,"tier");i++)star(645+(i-(num(p,"tier")-1)*.5f)*17,199,7,{207,163,226,255});
+  if(turnControl(busy?"Thinking":"End turn",array(p,"discovers").empty()))send({{"type","end"}});
   heroPortrait(p["hero"],{808,715},.95f,num(p,"health"));
   text(s(p["hero"],"name"),808,782,17,Pale,true,true);
   if(powerOrb(p,{952,711},true)){json cmd={{"type","power"}};if(selectedZone=="board")cmd["target"]=num(selectedUnit,"uid");action(cmd);}
-  gem(1397,789,34,{184,125,21,255},std::to_string(num(p,"gold")),36,10);text("GOLD",1456,784,18,Gold,true);
+  DrawRectangleRounded({1298,798,242,42},.8f,16,{37,27,25,230});
+  for(int i=0;i<10;i++){float x=1318+i*22;DrawCircle(x,819,9,i<num(p,"gold")?Gold:Color{74,60,45,255});DrawCircleLines(x,819,7,i<num(p,"gold")?Pale:Color{111,88,54,255});}
+  text(std::to_string(num(p,"gold"))+" / 10",1417,851,18,Pale,true,true);
   if(num(p,"coins")>0&&btn("Coin +1",{1210,813,136,41},num(p,"gold")<10,false,18))action({{"type","coin"}});
   if(num(p,"bananas")>0&&btn("Banana",{1210,760,136,41},selectedZone=="board",false,18))action({{"type","banana"},{"target",num(selectedUnit,"uid")}});
   if(btn("Menu",{40,805,139,47},true,false,20))overlay="pause";
-  if(btn("F2  Tools",{204,805,146,47},true,false,19))debug=!debug;
+  if(hover({40,805,139,47}))text("F2: Tools",110,864,13,Cream,false,true);
   drawHand();selectionControls();
   if(array(p,"board").empty())text("Drag a minion here to build your warband",810,520,23,{134,90,46,150},true,true);
-  text("Drag to recruit, play or reposition. Drop a warband minion on Bob to sell.",809,618,17,{102,61,30,255},false,true);
+
   if(num(p,"health")<=0){text("You have been eliminated. Continue to spectate the lobby.",810,440,23,{124,30,24,255},true,true);}
  }
  void dragInput(){if(transitioning()||presenting()||busy||debug||!overlay.empty()||!editing.is_null()||!array(player(),"discovers").empty()||scene!="tavern")return;
-  if(clicked){focus.clear();bool found=false;for(auto it=hits.rbegin();it!=hits.rend();++it)if(CheckCollisionPointRec(mouse,it->bounds)&&!moving(it->unit)){dragged=it->unit;dragZone=it->zone;dragIndex=it->index;dragStart=mouse;dragging=false;found=true;selectedUnit=it->unit;selectedZone=it->zone;selectedIndex=it->index;break;}if(!found&&mouse.y<635){selectedZone.clear();selectedIndex=-1;}}
+  if(clicked){focus.clear();bool found=false;for(auto it=hits.rbegin();it!=hits.rend();++it)if(it->contains(mouse)&&!moving(it->unit)){dragged=it->unit;dragZone=it->zone;dragIndex=it->index;dragStart=mouse;dragging=false;found=true;selectedUnit=it->unit;selectedZone=it->zone;selectedIndex=it->index;break;}if(!found&&mouse.y<635){selectedZone.clear();selectedIndex=-1;}}
   if(down&&!dragged.is_null()&&Vector2Distance(mouse,dragStart)>9)dragging=true;
   if(released&&!dragged.is_null()){if(dragging){if(dragZone=="shop"&&mouse.y>415)action({{"type","buy"},{"index",dragIndex}});
-   else if(dragZone=="hand"&&mouse.y>400&&mouse.y<650){int pos=0;const auto& board=array(player(),"board");for(int i=0;i<(int)board.size();i++)if(mouse.x>position(i,board.size(),false).x)pos=i+1;json cmd={{"type","play"},{"index",dragIndex},{"position",pos}};for(const auto& h:hits)if(h.zone=="board"&&CheckCollisionPointRec(mouse,h.bounds)){cmd["target"]=num(h.unit,"uid");if((IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT))&&keyword(dragged,"MAGNETIC"))cmd["magnetic"]=true;}action(cmd);}
+   else if(dragZone=="hand"&&mouse.y>400&&mouse.y<650){int pos=0;const auto& board=array(player(),"board");for(int i=0;i<(int)board.size();i++)if(mouse.x>position(i,board.size(),false).x)pos=i+1;json cmd={{"type","play"},{"index",dragIndex},{"position",pos}};for(const auto& h:hits)if(h.zone=="board"&&h.contains(mouse)){cmd["target"]=num(h.unit,"uid");if((IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT))&&keyword(dragged,"MAGNETIC"))cmd["magnetic"]=true;}action(cmd);}
    else if(dragZone=="board"&&mouse.y<350)action({{"type","sell"},{"index",dragIndex}});
    else if(dragZone=="board"&&mouse.y>415&&mouse.y<630){int n=array(player(),"board").size();int target=0;float best=9999;for(int i=0;i<n;i++){float dist=std::abs(mouse.x-position(i,n,false).x);if(dist<best){best=dist;target=i;}}if(target!=dragIndex)action({{"type","move"},{"from",dragIndex},{"to",target}});}
   }if(pendingDrag.is_null())returnDragged();else{dragged=nullptr;dragging=false;}}
@@ -251,7 +376,8 @@ class NativeGame {
   }
   if(!attackVisual.is_null()){
    if(phase>.22f&&phase<motion::impact&&foundT){Vector2 dir=Vector2Normalize(Vector2Subtract(to,from));for(int i=0;i<3;i++){Vector2 off={dir.y*(i-1)*14,-dir.x*(i-1)*14};Vector2 head=Vector2Add(attackPosition,off);DrawLineEx(Vector2Subtract(head,Vector2Scale(dir,65-i*12)),head,3-i*.6f,Fade(Cream,.45f));}}
-   drawMinion(attackVisual,attackPosition,attackScale);
+   cardLift=24*sinf(std::min(1.f,phase)*PI);cardPitch=.24f*sinf(phase*PI);cardYaw=std::clamp((attackPosition.x-800)/1100.f,-.25f,.25f);
+   drawMinion(attackVisual,attackPosition,attackScale);cardLift=cardPitch=cardYaw=0;
   }
   if(attack&&foundT&&phase>=motion::impact&&phase<motion::impact+.14f){float k=(phase-motion::impact)/.14f;Vector2 contact=Vector2Lerp(from,to,.88f);for(int i=0;i<10;i++){float angle=i*PI/5+.15f;Vector2 dir={cosf(angle),sinf(angle)};DrawLineEx(Vector2Add(contact,Vector2Scale(dir,14+k*20)),Vector2Add(contact,Vector2Scale(dir,38+k*55)),3*(1-k),Fade({255,235,162,255},1-k));}}
   std::string resurrected=rebornName(prev,current);if(!resurrected.empty()){panel({557,397,508,46},{16,62,76,245});text("REBORN",811,401,18,{131,246,255,255},true,true);text(resurrected+" returns with 1 Health",811,422,16,Pale,false,true);for(const char* key:{"left","right"}){const auto& units=array(current,key);for(int i=0;i<(int)units.size();i++)if(flag(units[i],"rebornUsed")&&s(units[i],"name")==resurrected){Vector2 p=position(i,units.size(),std::string(key)=="right");float k=std::clamp(phase,0.f,1.f);DrawEllipseLines(p.x,p.y,75+35*k,91+28*k,Fade({102,240,255,255},1-k));}}}
@@ -265,7 +391,7 @@ class NativeGame {
   if(btn(">",{580,788,59,45},animationFrame<total-1,false,22)){animationFrame++;animationTime=duration*.8f;paused=true;frameImpact=false;}
   if(btn("Skip",{653,788,100,45},true,false,19)){animationFrame=total-1;animationTime=duration;finishClock=100;paused=false;}
   if(btn(speed<1?"0.5x":speed<2?"1x":"2x",{1190,788,96,45},true,false,19))speed=speed<1?1:speed<2?2:.5f;
-  if(btn(finishComplete?(replayOnly?"Return":s(game,"phase")=="finished"?"Results":"Recruit"):"Fighting",{1388,386,151,67},finishComplete,false,23)){if(replayOnly){scene=labReplay?"lab":"history";replay=nullptr;}else if(s(game,"phase")=="finished")overlay="results";else send({{"type","advance"}});}
+  if(turnControl(finishComplete?(replayOnly?"Return":s(game,"phase")=="finished"?"Results":"Recruit"):"Fighting",finishComplete)){if(replayOnly){scene=labReplay?"lab":"history";replay=nullptr;}else if(s(game,"phase")=="finished")overlay="results";else send({{"type","advance"}});}
   text(std::to_string(animationFrame+1)+" / "+std::to_string(total),1090,802,16,Cream,false,true);
   if(replayOnly&&!labReplay&&historyChoice<(int)history.size()){
    if(btn("Previous round",{345,841,218,38},historyRound>0,false,17)){historyRound--;send({{"type","replay"},{"matchId",s(history[historyChoice],"id")},{"round",historyRound}});}
@@ -297,12 +423,12 @@ class NativeGame {
   if(btn("Add to A",{308,702,173,47},true,labSide==0,20)){labSide=0;collectionForLab=true;cardPage=0;scene="collection";}
   if(btn("Add to B",{495,702,173,47},true,labSide==1,20)){labSide=1;collectionForLab=true;cardPage=0;scene="collection";}
   if(btn(labGolden?"Golden: ON":"Golden: OFF",{308,766,360,42},true,labGolden,18))labGolden=!labGolden;
-  if(btn("Run",{1388,386,151,67},true,false,24))send({{"type","lab.run"},{"seed",std::atoi(seed.c_str())}});
-  if(btn("100 combats",{1142,697,218,47},true,true,20))send({{"type","lab.odds"},{"samples",100},{"seed",std::atoi(seed.c_str())}});
+  if(btn("Run",{1388,386,151,67},true,false,24))send({{"type","lab.run"},{"seed",std::atoi(labSeed.c_str())}});
+  if(btn("100 combats",{1142,697,218,47},true,true,20))send({{"type","lab.odds"},{"samples",100},{"seed",std::atoi(labSeed.c_str())}});
   if(btn("Save scenario",{1142,759,218,43},true,false,19))send({{"type","lab.export"}});
-  if(btn("Clear boards",{1142,814,218,42},true,false,18))send({{"type","lab.new"},{"seed",std::atoi(seed.c_str())}});
+  if(btn("Clear boards",{1142,814,218,42},true,false,18))send({{"type","lab.new"},{"seed",std::atoi(labSeed.c_str())}});
   if(btn("Back",{43,815,133,45},true,false,20))scene="menu";
-  text("Seed",734,745,16,Gold,true);input("labseed",seed,{790,733,211,41},true);
+  text("Seed",734,745,16,Gold,true);input("labseed",labSeed,{790,733,211,41},true);
   if(!odds.is_null()){std::ostringstream line;line<<"A wins "<<num(odds,"wins")<<"%    Tie "<<num(odds,"ties")<<"%    B wins "<<num(odds,"losses")<<"%";panel({477,391,665,66});text(line.str(),810,412,22,Pale,true,true);}
   for(const auto& h:hits)if((h.zone=="lab0"||h.zone=="lab1")&&hover(h.bounds)&&clicked){labSide=h.zone=="lab1"?1:0;labSelected=h.index;}
   if(labSelected>=0&&labSelected<(int)array(lab["players"][labSide],"board").size()){const auto& u=lab["players"][labSide]["board"][labSelected];panel({1050,62,506,73});text(s(u,"name"),1290,71,17,Cream,true,true);if(btn("Atk -",{1064,98,86,28},num(u,"attack")-num(u,"auraAttack")>0,false,14))send({{"type","lab.stat"},{"side",labSide},{"index",labSelected},{"stat","attack"},{"value",num(u,"attack")-num(u,"auraAttack")-1}});if(btn("Atk +",{1160,98,86,28},true,false,14))send({{"type","lab.stat"},{"side",labSide},{"index",labSelected},{"stat","attack"},{"value",num(u,"attack")-num(u,"auraAttack")+1}});if(btn("HP +",{1256,98,86,28},true,false,14))send({{"type","lab.stat"},{"side",labSide},{"index",labSelected},{"stat","health"},{"value",num(u,"health")-num(u,"auraHealth")+1}});if(btn("Remove",{1352,98,181,28},true,false,14)){send({{"type","lab.remove"},{"side",labSide},{"index",labSelected}});labSelected=-1;}}
@@ -327,7 +453,7 @@ class NativeGame {
   text("Drop a JSON save, pack, or lab scenario into the game window to import.",978,797,13,{151,126,94,255});
  }
  void modal(){if(overlay.empty())return;DrawRectangle(0,0,W,H,{12,8,14,185});panel({486,145,625,610});text(overlay=="settings"?"Settings":overlay=="results"?"Well played!":"The Tavern",799,180,35,Pale,true,true);
-  if(overlay=="results"){text("You finished #"+std::to_string(num(player(),"placement",8)),800,278,38,Gold,true,true);heroPortrait(player()["hero"],{800,395},1.2f);if(btn("Play again",{596,529,407,57},true,true,26)){overlay.clear();scene="heroes";}if(btn("Main menu",{596,603,407,52},true,false,23)){overlay.clear();scene="menu";}return;}
+  if(overlay=="results"){text("You finished #"+std::to_string(num(player(),"placement",8)),800,278,38,Gold,true,true);heroPortrait(player()["hero"],{800,395},1.2f);if(btn("Play again",{596,529,407,57},true,true,26)){chooseNewMatch();}if(btn("Main menu",{596,603,407,52},true,false,23)){overlay.clear();scene="menu";}return;}
   if(overlay=="pause"){if(btn("Return to game",{596,265,407,55},true,true)){overlay.clear();}if(btn("Card Workshop",{596,336,407,51})){overlay.clear();scene="collection";collectionForLab=false;}if(btn("Export save",{596,401,407,51},game.is_object()))send({{"type","save.export"}});if(btn("Settings",{596,467,407,51}))overlay="settings";if(btn("How to play",{596,533,407,51}))overlay="help";if(btn("Main menu",{596,600,407,51})){scene="menu";overlay.clear();}return;}
   if(overlay=="help"){wrapped("Recruit a minion for 3 gold, then drag it from your hand onto the lower row. Sell a minion for 1 gold by dragging it to the shop. Three matching minions combine into a golden minion. Playing it discovers a minion from the next tavern tier.\n\nDrag your warband to set attack order. Hold Shift while dropping a Magnetic card onto a Mech to merge it. For targeted powers, click a warband minion first.\n\nR refreshes. F freezes. Space ends your turn. F2 opens the debug console. F11 toggles fullscreen. Escape opens the menu.",533,257,529,22,Cream);if(btn("Got it",{623,667,354,51},true,true))overlay.clear();return;}
   text("Sound volume",538,272,23,Cream,true);if(btn("-",{841,267,57,43},audio.volume>0))audio.volume=std::max(0.f,audio.volume-.1f);text(std::to_string((int)std::round(audio.volume*100))+"%",938,279,22,Pale,true,true);if(btn("+",{980,267,57,43},audio.volume<1))audio.volume=std::min(1.f,audio.volume+.1f);
@@ -350,23 +476,31 @@ class NativeGame {
  void tickEffects(float dt){for(auto& p:particles){p.age+=dt;p.p=Vector2Add(p.p,Vector2Scale(p.v,dt));p.v.y+=p.kind==2?-30:120;}particles.erase(std::remove_if(particles.begin(),particles.end(),[](const Particle&p){return p.age>p.life;}),particles.end());for(auto& f:floaters){f.age+=dt;f.p.y-=40*dt;}floaters.erase(std::remove_if(floaters.begin(),floaters.end(),[](const Floater&f){return f.age>1.1f;}),floaters.end());noticeTime-=dt;shake=std::max(0.f,shake-dt*20);}
  void drawEffects(){for(const auto& wave:shieldWaves){float t=std::clamp(wave.age/.48f,0.f,1.f);Vector2 pos=wave.position;for(const auto& f:flights)if(num(f.unit,"uid")==wave.uid)pos=Vector2Lerp(f.from,f.to,1-powf(1-std::min(1.f,f.age/f.life),3));float radius=wave.gain?1.45f-.45f*motion::smooth(t):1+.65f*t;Color gold={255,230,117,255};if(wave.gain)DrawEllipse(pos.x,pos.y,66*radius,84*radius,Fade(gold,sinf(t*PI)*.3f));for(int j=0;j<48;j++){float a=j*PI/24,b=a+(wave.gain?PI/24:PI/42);Vector2 from={pos.x+cosf(a)*66*radius,pos.y+sinf(a)*84*radius},to={pos.x+cosf(b)*66*radius,pos.y+sinf(b)*84*radius};DrawLineEx(from,to,(wave.gain?5:7)*(1-t)+1,Fade(gold,1-t));}}
 for(const auto& p:particles){float a=1-p.age/p.life;if(p.kind==1)DrawPoly(p.p,3,p.size*1.6f,p.age*200,Fade(p.color,a));else if(p.kind==2)DrawCircleV(p.p,p.size*(1+p.age*4),Fade(p.color,a*.5f));else{DrawCircleGradient(p.p,p.size*3,Fade(p.color,a*.4f),BLANK);DrawCircleV(p.p,p.size*a,Fade(p.color,a));}}for(const auto& f:floaters){float alpha=std::min(1.f,(1.1f-f.age)*2);bool damage=!f.text.empty()&&f.text[0]=='-';if(damage&&f.age<.65f){float a=alpha*std::min(1.f,(.65f-f.age)*5);star(f.p.x+2,f.p.y+3,34,Fade({108,40,14,255},a));star(f.p.x,f.p.y,31,Fade({238,176,43,255},a));}text(f.text,f.p.x,f.p.y-17,damage?33:27,Fade(f.color,alpha),true,true);}}
- void take(const std::string& name){auto image=LoadImageFromTexture(canvas.texture);ImageFlipVertical(&image);ExportImage(image,(directory/"screenshots"/(name+".png")).string().c_str());UnloadImage(image);}
+ void take(const std::string& name){auto image=LoadImageFromTexture(canvas.texture);ImageFlipVertical(&image);ExportImage(image,(diagnostics/"screenshots"/(name+".png")).string().c_str());UnloadImage(image);}
  void smokeDrag(const std::string& zone,Vector2 destination,bool accepted=true){auto it=std::find_if(hits.begin(),hits.end(),[&](const Hit& h){return h.zone==zone&&h.index==0;});if(it==hits.end()){smokeError="Missing drag hit area: "+zone;return;}mouse={it->bounds.x+it->bounds.width/2,it->bounds.y+it->bounds.height/2};clicked=true;released=false;down=true;dragInput();mouse=destination;clicked=false;dragging=true;
   if(!moving(dragged))smokeError="Drag source was not hidden";
-  BeginTextureMode(canvas);drawBackground();hits.clear();tavern();dragGuide();drawingFlight=true;drawMinion(dragged,mouse,1.08f,1,true);drawingFlight=false;EndTextureMode();take(zone=="shop"?"08-drag-shop":zone=="hand"?"09-drag-hand":!accepted?"11-cancel-drag":destination.y<350?"12-sell-drag":"10-drag-board");
+  BeginTextureMode(canvas);drawBackground();hits.clear();tavern();dragGuide();drawDraggedCard();EndTextureMode();take(zone=="shop"?"08-drag-shop":zone=="hand"?"09-drag-hand":!accepted?"11-cancel-drag":destination.y<350?"12-sell-drag":"10-drag-board");
   released=true;dragInput();released=false;down=false;if(accepted&&pendingDrag.is_null())smokeError="Drag disappeared before command response";if(!accepted&&(!pendingDrag.is_null()||dragging||flights.empty()))smokeError="Canceled drag did not return to its slot";
  }
- void smokeTick(float dt){if(!smoke)return;smokeTime+=dt;if(smokeTime>65||!smokeError.empty()){if(smokeError.empty())smokeError="Timeout";std::ofstream(directory/"smoke-result.json")<<json({{"ok",false},{"stage",smokeStage},{"error",smokeError}}).dump(2);exitGame=true;return;}
-  if(!statusReplay.is_null()){if(busy||!ready)return;if(smokeStage++==0){setReplay(statusReplay,true);paused=true;return;}const auto& frames=replay["result"]["frames"];int captures=0;bool sawReborn=false;for(int i=0;i<(int)frames.size();i++){bool reborn=i>0&&!rebornName(frames[i-1],frames[i]).empty();bool power=s(frames[i],"text").find(":")!=std::string::npos;if(i>2&&!reborn&&!power)continue;animationFrame=i;animationTime=combatDuration(frames,i)*.70f/std::max(.25f,speed);frameImpact=false;particles.clear();floaters.clear();BeginTextureMode(canvas);drawBackground();combatScene(0);drawEffects();EndTextureMode();take("status-"+std::to_string(i));captures++;sawReborn|=reborn;}std::ofstream(directory/"status-smoke-result.json")<<json({{"ok",sawReborn},{"captures",captures},{"rebornCue",sawReborn}}).dump(2);exitGame=true;return;}
+ void smokeTick(float dt){if(!smoke)return;
+  if(transitioning()&&statusReplay.is_null()){int direction=transitionLabel=="COMBAT"?0:1;
+   for(int i=0;i<3;i++)if(!phaseCaptures[direction][i]&&transitionClock>std::array{.20f,.51f,.84f}[i]){
+    take(std::string("phase-")+(direction==0?"combat-":"recruit-")+std::to_string(i));
+    phaseCaptures[direction][i]=true;
+   }
+   if(scene=="combat"&&(animationFrame!=0||animationTime!=0))smokeError="Combat advanced during scenery flip";
+  }
+  smokeTime+=dt;if(smokeTime>65||!smokeError.empty()){if(smokeError.empty())smokeError="Timeout";std::ofstream(diagnostics/"smoke-result.json")<<json({{"ok",false},{"stage",smokeStage},{"error",smokeError}}).dump(2);exitGame=true;return;}
+  if(!statusReplay.is_null()){if(busy||!ready)return;if(smokeStage++==0){setReplay(statusReplay,true);paused=true;return;}const auto& frames=replay["result"]["frames"];int captures=0;bool sawReborn=false;for(int i=0;i<(int)frames.size();i++){bool reborn=i>0&&!rebornName(frames[i-1],frames[i]).empty();bool power=s(frames[i],"text").find(":")!=std::string::npos;if(i>2&&!reborn&&!power)continue;animationFrame=i;animationTime=combatDuration(frames,i)*.70f/std::max(.25f,speed);frameImpact=false;particles.clear();floaters.clear();BeginTextureMode(canvas);drawBackground();combatScene(0);drawEffects();EndTextureMode();take("status-"+std::to_string(i));captures++;sawReborn|=reborn;}std::ofstream(diagnostics/"status-smoke-result.json")<<json({{"ok",sawReborn},{"captures",captures},{"rebornCue",sawReborn}}).dump(2);exitGame=true;return;}
   if(smokeStage==19&&presenting()){if(recruitKind=="enter"&&recruitClock>.33f&&!smokeEntryCaptured){take("13-battlecry-entry");smokeEntryCaptured=true;if(array(player(),"board").size()!=2)smokeError="Battlecry token appeared before minion landed";}if(recruitKind=="battlecry"&&recruitClock>.25f&&!smokeSummonCaptured){take("14-battlecry-summon");smokeSummonCaptured=true;if(array(player(),"board").size()!=3)smokeError="Battlecry token did not appear after entry";}}
   if(busy||!ready||presenting()||transitioning())return;if(++smokeWait<30)return;smokeWait=0;
   switch(smokeStage++){
-   case 0:take("01-menu");send({{"type","new"},{"seed",35747},{"hero","curator"},{"difficulty","standard"}});break;
+   case 0:take("01-menu");{chooseNewMatch();auto first=seed;chooseNewMatch();auto value=std::stoull(seed);if(seed==first||value<1||value>UINT32_MAX||labSeed!="42")smokeError="Automatic match seed regression";scene="menu";}send({{"type","new"},{"seed",35747},{"hero","curator"},{"difficulty","standard"}});break;
    case 1:scene="tavern";smokeDrag("shop",{800,730});break;
    case 2:smokeDrag("hand",{930,525});break;
    case 3:take("02-tavern");send({{"type","end"}});break;
    case 4:animationFrame=std::min(2,(int)array(replay["result"],"frames").size()-1);animationTime=.86f*.12f;paused=true;frameImpact=false;break;
-   case 5:take("03-windup");animationTime=.86f*.40f;frameImpact=false;BeginTextureMode(canvas);drawBackground();combatScene(0);drawEffects();EndTextureMode();take("03-combat");{json savedReplay=replay;if(replay["result"]["winner"].is_null()){auto& r=replay["result"];r["winner"]=r["leftId"];r["damage"]=4;auto& last=r["frames"].back();last["left"]=r["frames"][0]["left"];last["right"]=json::array();if(last["left"].size()>1)last["left"][1]["tier"]=2;}animationFrame=replay["result"]["frames"].size()-1;const auto& end=replay["result"]["frames"][animationFrame];bool own=num(replay["result"],"winner",-1)==num(replay["result"],"leftId");float gather=.45f+array(end,own?"left":"right").size()*.24f+.75f;for(int i=0;i<3;i++){finishClock=i==0?.55f:i==1?gather+.40f:gather+.56f;finishHit=false;floaters.clear();particles.clear();BeginTextureMode(canvas);drawBackground();combatScene(0);drawEffects();EndTextureMode();take(i==0?"22-stars-gather":i==1?"23-hero-strike":"24-hero-damage");if(i<2&&finishHit)smokeError="Hero damage appeared before impact";if(i==2&&!finishHit)smokeError="Hero strike did not apply visual damage";}beginTransition("RECRUIT");transitionClock=.44f;BeginTextureMode(canvas);drawBackground();drawTransition();EndTextureMode();take("25-phase-roll");transitionClock=2;replay=savedReplay;}send({{"type","advance"}});break;
+   case 5:take("03-windup");animationTime=.86f*.40f;frameImpact=false;BeginTextureMode(canvas);drawBackground();combatScene(0);drawEffects();EndTextureMode();take("03-combat");{json savedReplay=replay;if(replay["result"]["winner"].is_null()){auto& r=replay["result"];r["winner"]=r["leftId"];r["damage"]=4;auto& last=r["frames"].back();last["left"]=r["frames"][0]["left"];last["right"]=json::array();if(last["left"].size()>1)last["left"][1]["tier"]=2;}animationFrame=replay["result"]["frames"].size()-1;const auto& end=replay["result"]["frames"][animationFrame];bool own=num(replay["result"],"winner",-1)==num(replay["result"],"leftId");float gather=.45f+array(end,own?"left":"right").size()*.24f+.75f;for(int i=0;i<3;i++){finishClock=i==0?.55f:i==1?gather+.40f:gather+.56f;finishHit=false;floaters.clear();particles.clear();BeginTextureMode(canvas);drawBackground();combatScene(0);drawEffects();EndTextureMode();take(i==0?"22-stars-gather":i==1?"23-hero-strike":"24-hero-damage");if(i<2&&finishHit)smokeError="Hero damage appeared before impact";if(i==2&&!finishHit)smokeError="Hero strike did not apply visual damage";}replay=savedReplay;}send({{"type","advance"}});break;
    case 6:if(num(game,"round")!=2)smokeError="Round did not advance";scene="collection";break;
    case 7:take("04-collection");editing=cards[0];editorName=s(editing,"name");editorText=s(editing,"text");editorEffect=s(editing,"effect");break;
    case 8:take("05-editor");editing=nullptr;scene="lab";send({{"type","lab.new"}});break;
@@ -382,32 +516,39 @@ for(const auto& p:particles){float a=1-p.age/p.life;if(p.kind==1)DrawPoly(p.p,3,
    case 18:action({{"type","play"},{"index",0}});break;
    case 19:if(!smokeEntryCaptured||!smokeSummonCaptured||array(player(),"board").size()!=3)smokeError="Battlecry presentation did not complete in order";take("15-battlecry-complete");scene="collection";editing=cards[0];editing["golden"]=true;editorName=s(editing,"name");editorText=s(editing,"text");editorEffect=s(editing,"effect");break;
    case 20:take("16-golden-frame");editing=nullptr;scene="tavern";send({{"type","debug"},{"player",0},{"command","spawn EX1_507"}});break;
-   case 21:take("17-warleader-aura");{json target=player()["board"][0];BeginTextureMode(canvas);drawBackground();tavern();auraLinks(target);buffTooltip(target,1030,120);EndTextureMode();take("18-aura-hover");ui::time+=.55f;BeginTextureMode(canvas);drawBackground();tavern();auraLinks(target);buffTooltip(target,1030,120);EndTextureMode();take("21-aura-pulse");json before=player(),after=before;after["board"][0]["keywords"].push_back("DIVINE_SHIELD");shieldWaves.clear();shieldChanges(before,after);if(shieldWaves.empty()||!shieldWaves.back().gain)smokeError="Missing shield gain animation";else shieldWaves.back().age=.16f;BeginTextureMode(canvas);drawBackground();tavern();drawEffects();EndTextureMode();take("19-shield-gain");shieldWaves.clear();shieldChanges(after,before);if(shieldWaves.empty()||shieldWaves.back().gain)smokeError="Missing shield break animation";else shieldWaves.back().age=.16f;BeginTextureMode(canvas);drawBackground();tavern();drawEffects();EndTextureMode();take("20-shield-break");}if(num(player()["board"][0],"attack")!=3||statColor(player()["board"][0],false).g!=240)smokeError="Warleader aura not shown on target";if(!(motion::attackTravel(.1f)<0&&motion::attackTravel(.36f)>.7f&&std::abs(motion::attackTravel(.36f)-motion::attackTravel(.42f))<.001f&&motion::attackTravel(.95f)==0))smokeError="Attack timing regression";std::ofstream(directory/"smoke-result.json")<<json({{"ok",smokeError.empty()},{"round",num(game,"round")},{"gold",num(player(),"gold")},{"samples",num(odds,"samples")},{"screenshots",26},{"battlecryOrder",smokeEntryCaptured&&smokeSummonCaptured},{"dragChecks",{"buy","play","reorder","cancel","sell","source hidden","pending response"}},{"renderer","raylib 6.0 / OpenGL"}}).dump(2);exitGame=true;break;
+   case 21:if(!phaseCaptures[0][2]||!phaseCaptures[1][2])smokeError="Missing phase flip captures";take("17-warleader-aura");{json target=player()["board"][0];BeginTextureMode(canvas);drawBackground();tavern();auraLinks(target);buffTooltip(target,1030,120);EndTextureMode();take("18-aura-hover");ui::time+=.55f;BeginTextureMode(canvas);drawBackground();tavern();auraLinks(target);buffTooltip(target,1030,120);EndTextureMode();take("21-aura-pulse");json before=player(),after=before;after["board"][0]["keywords"].push_back("DIVINE_SHIELD");shieldWaves.clear();shieldChanges(before,after);if(shieldWaves.empty()||!shieldWaves.back().gain)smokeError="Missing shield gain animation";else shieldWaves.back().age=.16f;BeginTextureMode(canvas);drawBackground();tavern();drawEffects();EndTextureMode();take("19-shield-gain");shieldWaves.clear();shieldChanges(after,before);if(shieldWaves.empty()||shieldWaves.back().gain)smokeError="Missing shield break animation";else shieldWaves.back().age=.16f;BeginTextureMode(canvas);drawBackground();tavern();drawEffects();EndTextureMode();take("20-shield-break");}if(num(player()["board"][0],"attack")!=3||statColor(player()["board"][0],false).g!=240)smokeError="Warleader aura not shown on target";if(!(motion::attackTravel(.1f)<0&&motion::attackTravel(.36f)>.7f&&std::abs(motion::attackTravel(.36f)-motion::attackTravel(.42f))<.001f&&motion::attackTravel(.95f)==0))smokeError="Attack timing regression";std::ofstream(diagnostics/"smoke-result.json")<<json({{"ok",smokeError.empty()},{"round",num(game,"round")},{"gold",num(player(),"gold")},{"samples",num(odds,"samples")},{"screenshots",31},{"cornerFlipChecks",phaseCaptures[0][2]&&phaseCaptures[1][2]},{"battlecryOrder",smokeEntryCaptured&&smokeSummonCaptured},{"dragChecks",{"buy","play","reorder","cancel","sell","source hidden","pending response"}},{"renderer","raylib 6.0 / OpenGL perspective 2.5D"}}).dump(2);exitGame=true;break;
   }
  }
 public:
  int run(int argc,char**argv){for(int i=1;i<argc;i++)if(std::string(argv[i])=="--smoke")smoke=true;else if(std::string(argv[i])=="--status-smoke"&&i+1<argc){smoke=true;std::ifstream fixture(argv[++i]);fixture>>statusReplay;}
-  directory=std::filesystem::absolute(std::filesystem::path(argv[0])).parent_path();std::filesystem::create_directories(directory/"screenshots");SetTraceLogLevel(LOG_WARNING);SetConfigFlags(FLAG_WINDOW_RESIZABLE|FLAG_MSAA_4X_HINT|(smoke?FLAG_WINDOW_HIDDEN:0));InitWindow(1600,900,"Battlegrounds - The Local Tavern");SetWindowMinSize(1050,650);SetTargetFPS(60);SetExitKey(KEY_NULL);ui::initialize(directory.string());audio.init();board=texture("assets/tavern-board.png");canvas=LoadRenderTexture(W,H);transitionFrame=LoadRenderTexture(W,H);SetTextureFilter(canvas.texture,TEXTURE_FILTER_BILINEAR);
+  directory=contentDirectory(argv[0]);
+#ifdef __APPLE__
+  diagnostics=bg::Host::defaultDataDir();
+#else
+  diagnostics=directory;
+#endif
+  if(smoke)std::filesystem::create_directories(diagnostics/"screenshots");SetTraceLogLevel(LOG_WARNING);SetConfigFlags(FLAG_WINDOW_RESIZABLE|FLAG_MSAA_4X_HINT|(smoke?FLAG_WINDOW_HIDDEN:0));InitWindow(1600,900,"Battlegrounds - The Local Tavern");SetWindowMinSize(1050,650);SetTargetFPS(60);SetExitKey(KEY_NULL);ui::initialize(directory.string());audio.init();board=texture("assets/tavern-board.png");combatBoard=texture("assets/combat-board.png");canvas=LoadRenderTexture(W,H);transitionFrame=LoadRenderTexture(W,H);uiFrame=LoadRenderTexture(W,H);SetTextureFilter(canvas.texture,TEXTURE_FILTER_BILINEAR);
   if(!bridge.start(directory)){busy=false;tell("Could not start the rules engine. Check the data folder beside the executable.");}else bridge.send({{"type","boot"}});
   while(!WindowShouldClose()&&!exitGame){float dt=std::min(GetFrameTime(),.1f);ui::time+=dt;receive();if(overlay.empty()&&!debug)transitionClock+=dt;float scale=std::min((float)GetScreenWidth()/W,(float)GetScreenHeight()/H);Vector2 offset={(GetScreenWidth()-W*scale)*.5f,(GetScreenHeight()-H*scale)*.5f};mouse=Vector2Scale(Vector2Subtract(GetMousePosition(),offset),1/scale);clicked=IsMouseButtonPressed(MOUSE_BUTTON_LEFT);released=IsMouseButtonReleased(MOUSE_BUTTON_LEFT);down=IsMouseButtonDown(MOUSE_BUTTON_LEFT);keyboard();droppedFiles();tickEffects(dt);tickRecruit(dt);if(overlay.empty()&&!debug&&!(scene=="combat"&&paused)){for(auto& wave:shieldWaves)wave.age+=dt*speed;shieldWaves.erase(std::remove_if(shieldWaves.begin(),shieldWaves.end(),[](const ShieldWave& wave){return wave.age>=.48f;}),shieldWaves.end());}hits.clear();hoverUnit=nullptr;
    ui::delta=dt;wantsPointer=false;if(down&&!dragged.is_null()&&Vector2Distance(mouse,dragStart)>9)dragging=true;
-   BeginTextureMode(canvas);ClearBackground({29,17,21,255});drawBackground();blocked=transitioning()||!overlay.empty()||debug||!editing.is_null()||(scene=="tavern"&&!array(player(),"discovers").empty());
+   BeginTextureMode(uiFrame);ClearBackground(BLANK);blocked=transitioning()||!overlay.empty()||debug||!editing.is_null()||(scene=="tavern"&&!array(player(),"discovers").empty());
    if(!ready){text("Opening the tavern...",800,425,35,Pale,true,true);}else if(scene=="menu")menu();else if(scene=="heroes")heroSelection();else if(scene=="tavern")tavern();else if(scene=="combat")combatScene(dt);else if(scene=="collection")collection();else if(scene=="lab")labScene();else if(scene=="history")historyScene();
    dragInput();dragGuide();recruitPulse();drawFlights(dt);drawEffects();blocked=transitioning();
-   if(dragging&&!dragged.is_null()){drawingFlight=true;drawMinion(dragged,mouse,1.08f,1,true);drawingFlight=false;}
+   if(dragging&&!dragged.is_null()){drawDraggedCard();}
    else if(!pendingDrag.is_null()){drawingFlight=true;drawMinion(pendingDrag,pendingDragPosition,1.08f,1,true);drawingFlight=false;}
    else if(!hoverUnit.is_null()&&overlay.empty()&&!debug&&editing.is_null()){std::string id=s(hoverUnit,"cardId",s(hoverUnit,"id"))+std::to_string(num(hoverUnit,"uid",-1));if(id!=lastHoverId){lastHoverId=id;hoverStarted=ui::time;buffScroll=0;}auraLinks(hoverUnit);if(ui::time-hoverStarted>.6f)buffTooltip(hoverUnit,mouse.x+35,mouse.y-190);}
    else lastHoverId.clear();
-   discoverOverlay();editor();drawTransition();modal();debugPanel();if(busy&&ready){panel({678,12,245,37});text("Thinking...",800,19,18,Cream,true,true);}
-   if(noticeTime>0){panel({389,849,822,44});text(notice,800,862,notice.size()>85?14:18,Pale,false,true);}EndTextureMode();SetMouseCursor(dragging?MOUSE_CURSOR_RESIZE_ALL:wantsPointer?MOUSE_CURSOR_POINTING_HAND:MOUSE_CURSOR_DEFAULT);
+   discoverOverlay();editor();if(busy&&ready){panel({678,12,245,37});text("Thinking...",800,19,18,Cream,true,true);}
+   if(noticeTime>0){panel({389,849,822,44});text(notice,800,862,notice.size()>85?14:18,Pale,false,true);}EndTextureMode();
+   BeginTextureMode(canvas);drawBackground();drawTransition();modal();debugPanel();EndTextureMode();SetMouseCursor(dragging?MOUSE_CURSOR_RESIZE_ALL:wantsPointer?MOUSE_CURSOR_POINTING_HAND:MOUSE_CURSOR_DEFAULT);
    BeginDrawing();ClearBackground(BLACK);float sx=shake>0?sinf(ui::time*71)*shake:0;DrawTexturePro(canvas.texture,{0,0,(float)W,(float)-H},{offset.x+sx,offset.y,W*scale,H*scale},{0,0},0,WHITE);EndDrawing();smokeTick(dt);
   }
-  audio.close();UnloadRenderTexture(transitionFrame);UnloadRenderTexture(canvas);ui::cleanup();CloseWindow();return smoke&&!smokeError.empty()?1:0;
+  audio.close();UnloadRenderTexture(transitionFrame);UnloadRenderTexture(uiFrame);UnloadRenderTexture(canvas);ui::cleanup();CloseWindow();return smoke&&!smokeError.empty()?1:0;
  }
 };
 int main(int argc,char**argv){try{
  if(argc>1&&std::string(argv[1])=="--rules"){
-  bg::Host host(std::filesystem::absolute(argv[0]).parent_path()/"data");
+  bg::Host host(contentDirectory(argv[0])/"data");
   std::string line;while(std::getline(std::cin,line)){try{bg::require(line.size()<=40000000,"Request too large");std::cout<<host.handle(bg::J::parse(line)).dump()<<std::endl;}catch(const std::exception& e){std::cout<<bg::J({{"ok",false},{"error",e.what()}}).dump()<<std::endl;}}return 0;
  }
  NativeGame game;return game.run(argc,argv);}catch(const std::exception& e){std::ofstream("native-crash.log")<<e.what();return 1;}}
