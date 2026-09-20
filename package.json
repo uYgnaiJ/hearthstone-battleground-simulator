@@ -6,22 +6,16 @@
   "type": "module",
   "scripts": {
     "dev": "npm run build && npm start",
-    "build": "tsc --noEmit && node tools/build-native.mjs",
-    "start": "node tools/run-native.mjs",
-    "test": "vitest run",
-    "soak": "tsx tools/soak.ts",
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build.ps1",
+    "start": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/run.ps1",
+    "test": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1",
+    "soak": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1 -SkipBuild -Soak",
     "import:cards": "node tools/import-cards.mjs",
     "package": "npm run build",
-    "test:native": "node tools/native-host-test.mjs && node tools/run-native.mjs --smoke",
-    "setup:native": "node tools/setup-native.mjs"
+    "test:native": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1 -Smoke",
+    "setup:native": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/setup.ps1"
   },
   "devDependencies": {
-    "@types/node": "^22.18.0",
-    "esbuild": "0.28.2",
-    "hearthstone-card-images": "^5.0.2",
-    "prettier": "^3.9.8",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "hearthstone-card-images": "^5.0.2"
   }
 }

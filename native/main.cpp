@@ -1,3 +1,4 @@
+#include <iostream>
 #include "bridge.hpp"
 #include "render.hpp"
 #include "audio.hpp"
@@ -47,7 +48,7 @@ class NativeGame {
 
  void tell(const std::string& message){notice=message;noticeTime=5.5f;}
  bool presenting()const{return !recruitView.is_null();}
- void send(json message){if(busy)return;auto type=s(message,"type");if(presenting()&&(type=="action"||type=="end"||type=="autoplay"||type=="rewind"||type=="debug"))return;if(!bridge.running()){tell("The rules process is unavailable. Restart to restore your save.");return;}busy=true;if(bridge.send(message)<0){busy=false;tell("Could not send the game action.");}}
+ void send(json message){if(busy)return;auto type=s(message,"type");if(presenting()&&(type=="action"||type=="end"||type=="autoplay"||type=="rewind"||type=="debug"))return;if(!bridge.running()){tell("The rules engine is unavailable. Restart to restore your save.");return;}busy=true;if(bridge.send(message)<0){busy=false;tell("Could not send the game action.");}}
  void action(json command){if(!busy&&dragging&&!dragged.is_null()){pendingDrag=dragged;pendingDragPosition=mouse;}send({{"type","action"},{"command",command}});selectedZone.clear();selectedIndex=-1;}
  bool moving(const json& unit)const{if(!unit.contains("uid"))return false;int uid=num(unit,"uid");if(dragging&&num(dragged,"uid",-1)==uid)return true;if(num(pendingDrag,"uid",-1)==uid)return true;for(const auto& f:flights)if(num(f.unit,"uid",-1)==uid)return true;return false;}
  Vector2 handPosition(int index,int count)const{float spacing=std::min(112.f,650.f/std::max(1,count));return {815-(count-1)*spacing/2+index*spacing,833};}
@@ -387,7 +388,7 @@ for(const auto& p:particles){float a=1-p.age/p.life;if(p.kind==1)DrawPoly(p.p,3,
 public:
  int run(int argc,char**argv){for(int i=1;i<argc;i++)if(std::string(argv[i])=="--smoke")smoke=true;else if(std::string(argv[i])=="--status-smoke"&&i+1<argc){smoke=true;std::ifstream fixture(argv[++i]);fixture>>statusReplay;}
   directory=std::filesystem::absolute(std::filesystem::path(argv[0])).parent_path();std::filesystem::create_directories(directory/"screenshots");SetTraceLogLevel(LOG_WARNING);SetConfigFlags(FLAG_WINDOW_RESIZABLE|FLAG_MSAA_4X_HINT|(smoke?FLAG_WINDOW_HIDDEN:0));InitWindow(1600,900,"Battlegrounds - The Local Tavern");SetWindowMinSize(1050,650);SetTargetFPS(60);SetExitKey(KEY_NULL);ui::initialize(directory.string());audio.init();board=texture("assets/tavern-board.png");canvas=LoadRenderTexture(W,H);transitionFrame=LoadRenderTexture(W,H);SetTextureFilter(canvas.texture,TEXTURE_FILTER_BILINEAR);
-  if(!bridge.start(directory)){busy=false;tell("Could not start the rules engine. Check runtime/node.exe and rules.cjs.");}else bridge.send({{"type","boot"}});
+  if(!bridge.start(directory)){busy=false;tell("Could not start the rules engine. Check the data folder beside the executable.");}else bridge.send({{"type","boot"}});
   while(!WindowShouldClose()&&!exitGame){float dt=std::min(GetFrameTime(),.1f);ui::time+=dt;receive();if(overlay.empty()&&!debug)transitionClock+=dt;float scale=std::min((float)GetScreenWidth()/W,(float)GetScreenHeight()/H);Vector2 offset={(GetScreenWidth()-W*scale)*.5f,(GetScreenHeight()-H*scale)*.5f};mouse=Vector2Scale(Vector2Subtract(GetMousePosition(),offset),1/scale);clicked=IsMouseButtonPressed(MOUSE_BUTTON_LEFT);released=IsMouseButtonReleased(MOUSE_BUTTON_LEFT);down=IsMouseButtonDown(MOUSE_BUTTON_LEFT);keyboard();droppedFiles();tickEffects(dt);tickRecruit(dt);if(overlay.empty()&&!debug&&!(scene=="combat"&&paused)){for(auto& wave:shieldWaves)wave.age+=dt*speed;shieldWaves.erase(std::remove_if(shieldWaves.begin(),shieldWaves.end(),[](const ShieldWave& wave){return wave.age>=.48f;}),shieldWaves.end());}hits.clear();hoverUnit=nullptr;
    ui::delta=dt;wantsPointer=false;if(down&&!dragged.is_null()&&Vector2Distance(mouse,dragStart)>9)dragging=true;
    BeginTextureMode(canvas);ClearBackground({29,17,21,255});drawBackground();blocked=transitioning()||!overlay.empty()||debug||!editing.is_null()||(scene=="tavern"&&!array(player(),"discovers").empty());
@@ -404,4 +405,9 @@ public:
   audio.close();UnloadRenderTexture(transitionFrame);UnloadRenderTexture(canvas);ui::cleanup();CloseWindow();return smoke&&!smokeError.empty()?1:0;
  }
 };
-int main(int argc,char**argv){try{NativeGame game;return game.run(argc,argv);}catch(const std::exception& e){std::ofstream("native-crash.log")<<e.what();return 1;}}
+int main(int argc,char**argv){try{
+ if(argc>1&&std::string(argv[1])=="--rules"){
+  bg::Host host(std::filesystem::absolute(argv[0]).parent_path()/"data");
+  std::string line;while(std::getline(std::cin,line)){try{bg::require(line.size()<=40000000,"Request too large");std::cout<<host.handle(bg::J::parse(line)).dump()<<std::endl;}catch(const std::exception& e){std::cout<<bg::J({{"ok",false},{"error",e.what()}}).dump()<<std::endl;}}return 0;
+ }
+ NativeGame game;return game.run(argc,argv);}catch(const std::exception& e){std::ofstream("native-crash.log")<<e.what();return 1;}}

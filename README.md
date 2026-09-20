@@ -4,7 +4,7 @@ A Windows desktop game rendered in **C++ / raylib 6**, with a Hearthstone-inspir
 
 ## Play
 
-Open `release/native/Battlegrounds.exe`. Keep the entire `release/native` folder together: it contains the game, cached art, and its private rules runtime. It works offline and requires no separately installed Node runtime. Windows x64 and an OpenGL 3.3 capable graphics driver are required.
+Open `release/native/Battlegrounds.exe`. Keep the entire `release/native` folder together: it contains the C++ executable, cached art, and editable JSON data. It works offline with no Node or JavaScript runtime. Windows x64 and an OpenGL 3.3 capable graphics driver are required.
 
 The game offers seven local computer opponents, three difficulty levels, hero selection, recruitment, triples, discoveries, hero powers, automatic combat, elimination, final placement, autosaves, and finished-match replays. Matches use a curated Origins pool: 80 minions and 23 heroes sourced from HearthstoneJSON **15.6 / build 35747**.
 
@@ -23,11 +23,11 @@ The game offers seven local computer opponents, three difficulty levels, hero se
 | Debug panel | F2 |
 | Fullscreen / menu | F11 / Escape |
 
-The app has no browser or webview. Raylib owns the native window, input, graphics and audio. A bundled, hidden Node process runs the deterministic TypeScript rules through private stdin/stdout pipes. No HTTP server is started.
+The app has no browser or webview. Raylib owns the native window, input, graphics and audio. The rules, combat, local AI, saves, editor and debugging commands are all C++20. A worker thread inside the executable processes game commands while the render thread keeps drawing. No child process or HTTP server is started.
 
 ## Workshop and debugging
 
-**Card Workshop** edits attack, health, tavern tier, pool count, keywords, enabled state, effect handler, description, and buff multipliers. Save, reset, duplicate, export a JSON pack, or drop a pack JSON file onto the workshop. The source definitions are `src/data/cards.json`; token art is in `src/data/token-art.json`. Existing matches embed their original pack, so edits take effect in new matches and newly created lab scenarios. Description text is descriptive: new mechanics require a handler in `src/game/engine.ts` or `src/game/combat.ts`.
+**Card Workshop** edits attack, health, tavern tier, pool count, keywords, enabled state, effect handler, description, and buff multipliers. Save, reset, duplicate, export a JSON pack, or drop a pack JSON file onto the workshop. The source definitions are `src/data/cards.json`; token art is in `src/data/token-art.json`. Existing matches embed their original pack, so edits take effect in new matches and newly created lab scenarios. Description text is descriptive: new mechanics require a handler in `native/rules/engine.hpp` or `native/rules/combat.inc`.
 
 **Combat Lab** builds two warbands, adds normal/golden minions, changes stats, plays frame-by-frame combat, estimates outcomes over 100 simulations, and imports/exports scenarios. Drop a scenario JSON on the lab to restore it.
 
@@ -42,21 +42,19 @@ For a source upload, include the repository files, `package-lock.json`, `cards-s
 Dependencies, `native/vendor`, build outputs, screenshots, test saves, and logs are excluded by `.gitignore`. Keep the entire `release/native` folder together when sharing the playable build separately (for example, as a release ZIP); it is not committed as source.
 
 ```powershell
-npm ci
-npm run setup:native
-npm run build
-npm start
+./tools/setup.ps1
+./tools/build.ps1
+./tools/run.ps1
 ```
 
-`setup:native` downloads pinned raylib, nlohmann JSON and a portable w64devkit compiler into `native/vendor`. Nothing is installed system-wide. Set `CXX` to use another compatible MinGW compiler. The prepared workspace already has these dependencies and cached art.
+`tools/setup.ps1` downloads pinned raylib, nlohmann JSON and a portable w64devkit compiler into `native/vendor`. Nothing is installed system-wide. Set `CXX` to use another compatible MinGW compiler. The prepared workspace already has these dependencies and cached art.
 
 ```powershell
-npm test
-npm run test:native
-npm run soak -- 1000
+./tools/test.ps1 -Smoke
+./tools/test.ps1 -SkipBuild -Soak 1000
 ```
 
-The native tests cover rules-process communication, card changes/reset, undo, import rejection, save/restart, a complete match, replays, and native buy/play/reorder/cancel/sell drag handlers. Twenty-six captured screens include cards mid-drag, entry before Battlecry summons, combat impact, normal/golden card frames, Warleader aura stats, hover enchantments, outward aura pulses, shield gain/break transitions, star gathering, hero strikes, and the four-panel phase roll. Checks verify that original drag slots stay empty and Battlecry tokens appear after their parent lands. Screenshots are written to `release/native/screenshots`. Test saves use isolated directories under `test-results`.
+The native suite includes 812 reference cases captured from the previous engine, plus gameplay assertions and integration checks covering card changes/reset, undo, import rejection, save/restart, a complete match, replays, and native buy/play/reorder/cancel/sell drag handlers. Twenty-six captured screens include cards mid-drag, entry before Battlecry summons, combat impact, normal/golden card frames, Warleader aura stats, hover enchantments, outward aura pulses, shield gain/break transitions, star gathering, hero strikes, and the four-panel phase roll. Checks verify that original drag slots stay empty and Battlecry tokens appear after their parent lands. Screenshots are written to `release/native/screenshots`. Test saves use isolated directories under `test-results`.
 
 Aura sources continuously emit expanding glow pulses; hovering an affected minion highlights its source and lists aura bonuses and recorded buffs beneath the enlarged card. Use the mouse wheel to scroll longer lists. Buffs from older saves without recorded provenance appear as Other stat changes. Divine Shield forms and shatters over a short animated transition.
 
@@ -66,16 +64,17 @@ Minions land before Battlecries resolve; repeated Battlecries have separate pres
 
 Text fields support cursor movement, Home/End, Shift selection, Ctrl+A, and clipboard shortcuts. Hand cards lift smoothly with stable hover areas; drag targets highlight on the table, and canceled cards return to their slots. Combat centers the enemy hero above the board, with health at the portrait bottom right. Circular hero powers show their cost and a hover description. Four board panels rotate between recruitment and combat. At combat end, surviving minions release tier stars in sequence; these gather into the winning hero before it lunges at the opponent, with damage shown at impact. Divine Shield has a bright gold bubble and label; Reborn has a cyan border and badge, an explicit grant cue, and a longer resurrection beat. Combat has clear win/loss feedback, pauses beneath menus, and settings restore fullscreen on launch.
 
-Art refresh commands (network needed only when importing):
+Optional artwork import tools still use Node as a development tool. Node and npm are not needed to build, test, launch, or distribute the game. Install those optional dependencies only to refresh artwork (network required):
 
 ```powershell
+npm ci
 npm run import:cards -- --art --tiles --renders
 node tools/import-token-art.mjs
 node tools/import-frames.mjs
 node tools/import-power-art.mjs
 ```
 
-The UI is C++/raylib. TypeScript supplies the shared game rules, AI and save validation; Node runs the hidden rules host. `npm start`, `npm run build`, and `npm run package` all target the native edition.
+Source layout: `native/main.cpp`, `render.hpp`, `motion.hpp`, and `audio.hpp` handle presentation; `native/rules` contains recruitment, combat, AI, persistence and validation; `native/bridge.hpp` owns the worker queue. Card definitions remain plain JSON. The optional npm build/start shortcuts call the same PowerShell scripts.
 
 ## Fidelity and remaining work
 

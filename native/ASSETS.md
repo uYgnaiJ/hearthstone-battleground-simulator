@@ -23,5 +23,4 @@ Generation prompt:
 
 - [raylib 6.0](https://github.com/raysan5/raylib/releases/tag/6.0): native window, OpenGL rendering, input and audio. zlib/libpng license.
 - [nlohmann JSON 3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0): C++ JSON protocol parsing. MIT license.
-- [Node.js](https://nodejs.org/): bundled headless rules runtime; its license file is included under `release/native/licenses`.
 - [w64devkit](https://github.com/skeeto/w64devkit): local build toolchain. Compiler sources/binaries are not part of the game distribution. MinGW runtime attribution is included.
